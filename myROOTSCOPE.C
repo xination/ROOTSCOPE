@@ -2275,8 +2275,8 @@ void ROOTSCOPE::To_display_histos( bool showMSG  ){
         }}
 
 
-        delete histo_xmax;
-        delete histo_xmin;
+        delete [] histo_xmax;
+        delete [] histo_xmin ;
 
 
         //  we need this condition, since at the first time
@@ -2890,7 +2890,7 @@ void ROOTSCOPE::To_show_AddSub_gate_dlg( ) {
 
          *fText_viewer <<
         Form("create a histo from gating Y: %.1f - %.1f, bg: %.1f to %.1f, at spec %d\n",
-                addGate1, addGate2, subGate1, subGate2, histos.size() ) ;
+                addGate1, addGate2, subGate1, subGate2, static_cast<int>(histos.size()) ) ;
         fText_viewer->ShowBottom();
 
 
@@ -2956,7 +2956,7 @@ void ROOTSCOPE::Project_from_1d( bool flagXY ){
 
             *fText_viewer <<
             Form("create a histo from gating X: %.1f - %.1f, at spec %d\n",
-                xMin, xMax, histos.size() );
+                xMin, xMax, static_cast<int>(histos.size()) );
             fText_viewer->ShowBottom();
         }
 
@@ -2991,7 +2991,7 @@ void ROOTSCOPE::Project_from_1d( bool flagXY ){
 
             *fText_viewer <<
             Form("create a histo from gating Y: %.1f - %.1f, at spec %d\n",
-                yMin, yMax, histos.size() ) ;
+                yMin, yMax, static_cast<int>(histos.size()) ) ;
             fText_viewer->ShowBottom();
         }
 
@@ -3049,7 +3049,7 @@ void ROOTSCOPE::Projection_2d( bool flagXY ){
         histos.push_back( pHisto );
         *fText_viewer <<
         Form("create a histo from gating X: %.1f - %.1f, at spec %d\n",
-            xMin, xMax, histos.size() );
+            xMin, xMax, static_cast<int>(histos.size()) );
         fText_viewer->ShowBottom();
     }
 
@@ -3061,7 +3061,7 @@ void ROOTSCOPE::Projection_2d( bool flagXY ){
         pHisto->SetTitle( pHisto_title.Data() );
         histos.push_back( pHisto );
         Form("create a histo from gating Y: %.1f - %.1f, at spec %d\n",
-            yMin, yMax, histos.size() );
+            yMin, yMax, static_cast<int>(histos.size()) );
         fText_viewer->ShowBottom();
     }
 
@@ -3089,7 +3089,7 @@ void ROOTSCOPE::To_display_histo2d() {
         fIsTH2_inPad = true;
         histo2d->Draw( styleDraw[fH2_style]  );
         c1->Update();
-        *fText_viewer << Form("\nopen 2d histogram\n")  <<  endl;
+        *fText_viewer << Form("open 2d histogram")  <<  endl;
         fText_viewer->ShowBottom();
     }
     else {

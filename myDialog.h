@@ -1946,8 +1946,8 @@ bool Dlg_Operation_histos::Special_case( TString epr ){
         if( createNewHisto )
         {
             fHistos->push_back( (TH1*) fHistos->at(hAIdx)->Clone() );
-            *fHisto_list = Form( "%d", fHistos->size()-1 ) ;
-            *fMessage = Form( "\nCreate a new spectrum at %d\n", fHistos->size()  );
+            *fHisto_list = Form( "%d", static_cast<int>(fHistos->size()-1) ) ;
+            *fMessage = Form( "\nCreate a new spectrum at %d\n", static_cast<int>(fHistos->size())  );
         }
         else
         {
@@ -2144,8 +2144,8 @@ void Dlg_Operation_histos::General_case( TString epr ){
             if( createNewHisto )
             {
                 fHistos->push_back( tempHisto );
-                *fHisto_list = Form( "%d", fHistos->size()-1 ) ;
-                *fMessage = Form( "\nCreate a new spectrum at %d\n", fHistos->size()  );
+                *fHisto_list = Form( "%d", static_cast<int>(fHistos->size()-1) ) ;
+                *fMessage = Form( "\nCreate a new spectrum at %d\n", static_cast<int>(fHistos->size())  );
             }
             else
             {
