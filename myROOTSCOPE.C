@@ -5,7 +5,7 @@
 //***************************************/
 #include "myDialog.h"
 #include "myUtility.h"
-
+//#include "dev.h" // work: have to clean it up.
 #include <RVersion.h>
 #include <TGaxis.h>
 #include <TStyle.h>
@@ -975,8 +975,8 @@ void ROOTSCOPE::Initialization() {
     fSigma_guess = 0.2;
     fThreshold   = 0.1;
     fTextSize    = 16;
-    fTextPrecision = 0;
-    fPrecisionFormat = " %.f";
+    fTextPrecision = 1;
+    fPrecisionFormat = " %.1f";
 
 
     fSwitch_overlap = 1;
@@ -1797,8 +1797,8 @@ void ROOTSCOPE::To_find_peaks() {
         tmp_text->SetTextColor( kRed  );
         tmp_text->SetBit( kCannotPick  );
         //tmp_text->SetText (peak_pos[i], peak_y[i],  Form(" %.f", peak_pos[i]) );
-        tmp_text->SetText (peak_pos[i], peak_y[i],
-            Form(fPrecisionFormat.Data(), peak_pos[i]) );
+        TString s = Form(fPrecisionFormat.Data(), peak_pos[i] );
+        tmp_text->SetText( peak_pos[i], peak_y[i], s.Data() );
         tmp_texts->Add( (TText*) tmp_text->Clone() );
         delete tmp_text;
 
@@ -2341,7 +2341,7 @@ void ROOTSCOPE::To_delete_histo_inSelectedPad() {
         histos.erase( histos.begin() + idx );
         To_backup_histos();
          *fText_viewer << Form("remove spec at %d", idx + 1 )  <<  endl;
-    fText_viewer->ShowBottom();
+        fText_viewer->ShowBottom();
 
     }
 
@@ -3919,7 +3919,7 @@ void myROOTSCOPE()
 
     // initially we don't load anything
     // and then we add 1d/2d histograms into it.
-    if( 0 ) {
+    if( 1 ) {
 
         ROOTSCOPE* app3
         = new ROOTSCOPE( gClient->GetRoot() );
@@ -3932,11 +3932,11 @@ void myROOTSCOPE()
     }
 
     // initially 1d/2d histogram(s) from a rootfile.
-    if( 1 ) {
+    if( 0 ) {
 
         ROOTSCOPE* app4
-        = new ROOTSCOPE( gClient->GetRoot(), "just_for_test.root" );
-
+        //= new ROOTSCOPE( gClient->GetRoot(), "just_for_test.root" );
+        = new ROOTSCOPE( gClient->GetRoot(), "/home/xination/Dropbox/3_my_program/demo_root/demo_histo/A_demo_sqr.root" );
     }
 
 
