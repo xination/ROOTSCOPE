@@ -1690,7 +1690,7 @@ ROOTSCOPE_lite::ROOTSCOPE_lite( const TGWindow * p, TH1* histo_input )
 
 
     // routine stuffs...
-    SetWindowName("Simple Example");    // Set a name to the main frame
+    SetWindowName("ROOTSCOPE_lite");    // Set a name to the main frame
     MapSubwindows();                    // Map all subwindows of main frame
     Resize( GetDefaultSize() );         // Initialize the layout algorithm
     MapWindow();                        // Map main frame
