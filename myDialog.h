@@ -1750,574 +1750,7 @@ Dlg_Change_histo_X_Range::Dlg_Change_histo_X_Range( const TGWindow* p,
 
 
 
-//////////////////////////////////////////////////////////////////
 
-//
-//
-///*
-//
-//    A dialog for histogram operations,
-//    if user input " 99 = 1 + 2"
-//    then we create a histogram from adding histos[0] + histos[1]
-//
-//    vector<TH1*>  histos is from input.
-//    here, we will both update the open_list, and histos.
-//
-//*/
-//class Dlg_Operation_histos: public TGMainFrame {
-//
-//private:
-//
-//    vector<TH1*>*    fHistos;
-//    TString*        fHisto_list;
-//    TString*        fMessage;
-//    TString         fHisto_list_backup;
-//    TString         fEntry_out;
-//
-//    TGVerticalFrame*    fVF;
-//    TGHorizontalFrame*  fHF_1;
-//    TGHorizontalFrame*  fHF_2;
-//    TGVerticalFrame*    fHisto_frame;
-//    TGLabel*	        fHisto_nameLabel[100]; // set a upper limit = 100
-//
-//
-//
-//    TGLabel*            fLabel;
-//    TGTextEntry*        fTextEntries;
-//    TGTextButton*       fBtn_close;
-//    TGTextButton*       fBtn_cancel;
-//
-//
-//
-//public:
-//
-//    // class constructor
-//    Dlg_Operation_histos(
-//        const TGWindow* ,       /* base windows */
-//        UInt_t ,                /* width */
-//        UInt_t ,                /* height */
-//        TString* histo_list,   /* value passing by reference */
-//        vector<TH1*>*  histos,
-//        TString* message  );
-//
-//    void    To_response_key( Event_t* );
-//
-//    void    To_focus_on_entry( Event_t* );
-//
-//    void    CloseWindow();
-//
-//    void    Cancel();
-//
-//    void    Parse_expression( );
-//
-//    void    Update_entry_output(char*);
-//
-//    bool    Special_case( TString epr );
-//
-//    void    General_case( TString epr );
-//
-//};
-//
-//
-//
-//void Dlg_Operation_histos::Cancel(){
-//
-//    // cancel the change, and use the original setting.
-//    *fHisto_list = fHisto_list_backup.Data();
-//    CloseWindow();
-// }
-//
-//
-//void Dlg_Operation_histos::CloseWindow(){
-//
-//    fBtn_close->SetState(kButtonDisabled); // to avoid double click.
-//    fBtn_cancel->SetState(kButtonDisabled);
-//
-//    DeleteWindow();
-// }
-//
-//
-//
-//void Dlg_Operation_histos::To_focus_on_entry( Event_t* e) {
-//
-//    fTextEntries->SetFocus();
-//    fTextEntries->SelectAll();
-//}
-//
-//
-//void Dlg_Operation_histos::To_response_key(Event_t* e) {
-//
-//    if ( e->fType == kGKeyPress   )
-//    {
-//        // using LookuString to get the key mapping.
-//        UInt_t key_symbol;
-//        char tmp[2];
-//        gVirtualX->LookupString( e, tmp,sizeof(tmp), key_symbol );
-//
-//         const unsigned key_enter = 36;
-//
-//        if( key_symbol == kKey_Enter   )  {  Parse_expression(); } // the enter key near num pad
-//
-//        else if ( e->fCode == key_enter ) {  Parse_expression(); } // the enter key in regular position.
-//
-//        else if( key_symbol == kKey_Escape   )  {  CloseWindow(); }
-//
-//    }
-//
-//}
-//
-//
-//void Dlg_Operation_histos::Update_entry_output( char* entry_output ) {
-//
-//    fEntry_out = entry_output;
-//}
-//
-//
-//bool Dlg_Operation_histos::Special_case( TString epr ){
-//
-//    Bool_t  ISsingleEqualSign = false;
-//    Bool_t  IsNoOtherOperator = true;
-//    TObjArray* objarray;
-//    Int_t substringN;
-//
-//    // STEP 1: To check that we just have one "=", and no other operators.
-//    objarray = epr.Tokenize( "=" );
-//    substringN = objarray->GetEntries();
-//    if( substringN ==2 ) { ISsingleEqualSign=true; }
-//
-//    objarray = epr.Tokenize( "+" );
-//    substringN = objarray->GetEntries();
-//    if( substringN >1 ) { IsNoOtherOperator=false; }
-//
-//    objarray = epr.Tokenize( "-" );
-//    substringN = objarray->GetEntries();
-//    if( substringN >1 ) { IsNoOtherOperator=false; }
-//
-//    objarray = epr.Tokenize( "*" );
-//    substringN = objarray->GetEntries();
-//    if( substringN >1 ) { IsNoOtherOperator=false; }
-//
-//    objarray = epr.Tokenize( "/" );
-//    substringN = objarray->GetEntries();
-//    if( substringN >1 ) { IsNoOtherOperator=false; }
-//
-//    Bool_t IsSpecialCase = false;
-//
-//    if( ISsingleEqualSign && IsNoOtherOperator ) { IsSpecialCase = true; }
-//
-//
-//
-//    // STEP 2 Get operands
-//
-//    Bool_t IsValidEpr = true;
-//    //      0 1 2 3 4
-//    // ex.  3 = 2  ( histo[2] = histo[1] )
-//    Int_t   hOutIdx =  0;
-//    Int_t   hAIdx   =  0;
-//    TString tmp;
-//
-//    if( IsSpecialCase ){
-//
-//
-//        Int_t    idxEqual= epr.Index("=");
-//
-//        tmp = epr(0,idxEqual);
-//        hOutIdx = tmp.Atoi();
-//        hOutIdx--; // since in the panel, we label histo[0] as spec no.1
-//
-//        tmp = epr( idxEqual+1, epr.Length() );
-//        hAIdx = tmp.Atoi();
-//        hAIdx--;
-//
-//        // check hAIdx
-//        if( hAIdx >= fHistos->size() ||  hAIdx < 0 ) IsValidEpr = false;
-//        if( hOutIdx <0 ) IsValidEpr = false;
-//
-//    }
-//
-//
-//    if( IsSpecialCase && IsValidEpr ) {
-//
-//
-//
-//        Bool_t createNewHisto = false;
-//        if( hOutIdx > 0 && hOutIdx >= fHistos->size() ) createNewHisto = true;
-//
-//
-//        if( createNewHisto )
-//        {
-//            fHistos->push_back( (TH1*) fHistos->at(hAIdx)->Clone() );
-//            *fHisto_list = Form( "%d", static_cast<int>(fHistos->size()-1) ) ;
-//            *fMessage = Form( "\nCreate a new spectrum at %d\n", static_cast<int>(fHistos->size())  );
-//        }
-//        else
-//        {
-//            fHistos->at(hOutIdx) = (TH1*) fHistos->at(hAIdx)->Clone();
-//            *fHisto_list = Form( "%d", hOutIdx) ;
-//            *fMessage = Form( "\nupdate the spectrum at %d\n", hOutIdx+1  );
-//        }
-//
-//
-//        return 1;
-//    }
-//    else
-//    {
-//        *fMessage = Form( "\nInvalid operation.\n" );
-//    }
-//
-//    return 0;
-//}
-//
-//
-//
-//void Dlg_Operation_histos::General_case( TString epr ){
-//
-//    Bool_t IsValidEpr   = false;
-//    Bool_t hasEqualSign = false;
-//    Bool_t hasPlusSign  = false;
-//    Bool_t hasMinusSign = false;
-//    Bool_t hasTimesSign = false;
-//    Int_t    idxEqual;
-//    Int_t    idxPlus;
-//    Int_t    idxMinus;
-//    Int_t    idxTimes;
-//
-//
-//    // STEP1 : validate the expression
-//    if( epr != "" )
-//    {
-//        //      0 1 2 3 4
-//        // ex.  2 = 2 + 1 ( histo[1] = histo[1] + histo[0]
-//        // ex  99 = 3 * 2 ( last one = 3 * histo[1] )
-//
-//        // find out the index of =, + , -, *
-//
-//        idxEqual = epr.Index("=");
-//        idxPlus  = epr.Index("+");
-//        idxMinus = epr.Index("-");
-//        idxTimes = epr.Index("*");
-//
-//        if ( idxEqual != -1 )  hasEqualSign = true;
-//        if ( idxPlus  != -1 )  hasPlusSign  = true;
-//        if ( idxMinus != -1 )  hasMinusSign = true;
-//        if ( idxTimes != -1 )  hasTimesSign = true;
-//
-//        if( hasEqualSign )
-//        {
-//            if( hasPlusSign || hasMinusSign || hasTimesSign ) { IsValidEpr = true; }
-//        }
-//
-//    }
-//
-//
-//
-//    // STEP2: Get operands
-//    Int_t hOutIdx =  0;
-//    Int_t hAIdx   =  0;
-//    Int_t hBIdx   =  0;
-//    Double_t mul  =  0;
-//    TString tmp;
-//
-//    if( IsValidEpr )
-//    {
-//        //      0 1 2 3 4
-//        // ex.  2 = 2 + 1 ( histo[1] = histo[1] + histo[0]
-//        // ex  99 = 3 * 2 ( last one = 3 * histo[1] )
-//
-//        tmp = epr(0,idxEqual); // slice it from index=0 to index=idxEqual
-//        hOutIdx = tmp.Atoi();
-//        hOutIdx--; // since in the panel, we label histo[0] as spec no.1
-//
-//
-//
-//
-//        if( hasPlusSign ) // + and - have two operands.
-//        {
-//
-//            // hout = hA +  hB
-//            tmp = epr( idxEqual+1, idxPlus);
-//            hAIdx = tmp.Atoi();
-//            hAIdx--;
-//
-//            tmp = epr( idxPlus+1, epr.Length() );
-//            hBIdx = tmp.Atoi();
-//            hBIdx--;
-//            if(0) printf("test hOutIdx = %d, hAIdx = %d, hBIdx = %d\n",hOutIdx,  hAIdx, hBIdx );
-//
-//        }
-//        else if ( hasMinusSign  && !hasTimesSign )
-//        {
-//            // hout = hA -  hB
-//            tmp = epr( idxEqual+1, idxMinus);
-//            hAIdx = tmp.Atoi();
-//            hAIdx--;
-//
-//            tmp = epr( idxMinus+1, epr.Length() );
-//            hBIdx = tmp.Atoi();
-//            hBIdx--;
-//            if(0) printf("test hOutIdx = %d, hAIdx = %d, hBIdx = %d\n",hOutIdx,  hAIdx, hBIdx );
-//
-//
-//        }
-//        else if( hasTimesSign  )
-//        {
-//            // hout = mul *  hB
-//            tmp = epr( idxEqual+1, idxTimes);
-//            mul = tmp.Atof();
-//
-//
-//            tmp = epr( idxTimes+1, epr.Length() );
-//            hBIdx = tmp.Atoi();
-//            hBIdx--;
-//            if(0) printf("\ntest1 hOutIdx = %d, mul = %.1f, hBIdx = %d\n",hOutIdx,  mul, hBIdx );
-//        }
-//
-//
-//
-//        // check hAIdx and hBIdx is within the range of histos.
-//        if( hAIdx > fHistos->size() ||  hAIdx < 0 ) IsValidEpr = false;
-//        if( hBIdx > fHistos->size() ||  hBIdx < 0 ) IsValidEpr = false;
-//        if( hOutIdx <0 ) IsValidEpr = false;
-//    }
-//
-//    Bool_t createNewHisto = false;
-//
-//    if( IsValidEpr ) {
-//
-//        Bool_t Is_operation_ok = false;
-//
-//
-//        // note: clone is not a good idea
-//        Int_t nbinsx  = fHistos->at( hBIdx) -> GetXaxis()-> GetNbins();
-//        Double_t xlow = fHistos->at( hBIdx)-> GetXaxis()-> GetXmin();
-//        Double_t xup  = fHistos->at( hBIdx)-> GetXaxis()-> GetXmax();
-//        TH1* tempHisto = new TH1F( "tempHisto", "tempHisto", nbinsx, xlow, xup );
-//
-//
-//        if( hasPlusSign )
-//        {
-//            // hout = hA + hB
-//            Is_operation_ok
-//            = tempHisto->Add( fHistos->at(hAIdx)  ,  fHistos->at(hBIdx) );
-//
-//            if( Is_operation_ok )
-//            {
-//                tempHisto -> SetTitle( Form("spec%02d + spec%02d", hAIdx+1, hBIdx+1 ));
-//                tempHisto -> SetName ( Form("spec%02d + spec%02d", hAIdx+1, hBIdx+1 ));
-//            }
-//
-//        }
-//        else if ( hasMinusSign && !hasTimesSign )
-//        {
-//            // hout = hA - hB
-//            Is_operation_ok
-//            = tempHisto->Add( fHistos->at(hAIdx),  fHistos->at(hBIdx), 1 , -1 );
-//
-//            if( Is_operation_ok )
-//            {
-//                tempHisto -> SetTitle( Form("spec%0d - spec%0d", hAIdx+1, hBIdx+1 ));
-//                tempHisto -> SetName ( Form("spec%0d - spec%0d", hAIdx+1, hBIdx+1 ));
-//            }
-//        }
-//        else if ( hasTimesSign )
-//        {
-//            // hout = mul *  hB
-//            Is_operation_ok
-//            = tempHisto->Add(  fHistos->at(hBIdx), mul );
-//
-//            if(0) printf("\ntest2 hOutIdx = %d, mul = %.1f, hBIdx = %d\n",hOutIdx,  mul, hBIdx );
-//
-//
-//            if( Is_operation_ok )
-//            {
-//                tempHisto -> SetTitle( Form("spec%02d * (%.1f)", hBIdx+1, mul ) );
-//                tempHisto -> SetName ( Form("spec%02d * (%.1f)", hBIdx+1, mul ) );
-//            }
-//        }
-//
-//
-//
-//        if( hOutIdx > 0 && hOutIdx >= fHistos->size() ) createNewHisto = true;
-//
-//
-//        if( Is_operation_ok )
-//        {
-//            if( createNewHisto )
-//            {
-//                fHistos->push_back( tempHisto );
-//                *fHisto_list = Form( "%d", static_cast<int>(fHistos->size()-1) ) ;
-//                *fMessage = Form( "\nCreate a new spectrum at %d\n", static_cast<int>(fHistos->size())  );
-//            }
-//            else
-//            {
-//                fHistos->at(hOutIdx) = tempHisto;
-//                *fHisto_list = Form( "%d", hOutIdx) ;
-//                *fMessage = Form( "\nupdate the spectrum at %d\n", hOutIdx+1  );
-//            }
-//
-//        }
-//
-//    }
-//    else
-//    {
-//         *fMessage = Form( "\nInvalid operation.\n" );
-//    }
-//
-//
-//}
-//
-//// this function parse the mathematical exprssion for the histogram
-//// operations. We will validate the input before apply the expression.
-//void Dlg_Operation_histos::Parse_expression( ){
-//
-//    TString epr = fEntry_out; // epr = math expression
-//
-//    if( !Special_case( epr ) ) { General_case( epr ); }
-//
-//    // specail case for example: 2 = 1 ( just one equal sign )
-//    // general case for example: 3 = 2 + 1, 99 = -1 * 2 ( one equal sign + one operator )
-//
-//    CloseWindow();
-//
-//}
-//
-//
-//
-//
-//// class constructor
-//Dlg_Operation_histos::Dlg_Operation_histos(
-//                const TGWindow* p,
-//                UInt_t w,
-//                UInt_t h,
-//                TString* histo_list,
-//                vector<TH1*>*  histos,
-//                TString* message )
-//: TGMainFrame(p, w, h) {
-//
-//    SetCleanup(kDeepCleanup); // important step for closing windows properly.
-//
-//    fHisto_list = histo_list;
-//    fHisto_list_backup= histo_list->Copy();
-//
-//    fHistos = histos;
-//    fMessage = message;
-//
-//    TGLayoutHints*  Layout1 = new TGLayoutHints( kLHintsCenterY, 2, 2, 2, 2);
-//    TGLayoutHints*  Layout2 = new TGLayoutHints( kLHintsExpandX, 2, 2, 2, 2);
-//    TGLayoutHints*  Layout3 = new TGLayoutHints( kLHintsLeft, 2, 2, 2, 2);
-//
-//
-//    fHisto_frame =new TGVerticalFrame( this, 10, 10);
-//    Int_t nRow = 10;
-//    Int_t nCol = 0;
-//    fHisto_frame->SetLayoutManager ( new TGMatrixLayout( fHisto_frame , nRow, nCol) );
-//
-//
-//    //-------------------------------------------------------| Labels
-//
-//    TString outstr;
-//    TString histo_title;
-//
-//    // here is just for my own display choice.
-//    int n1 = histos->size() / 10;
-//    int n2 = ( n1 + 1) *10;
-//    if (n2 <= 10 ) n2 =20;
-//
-//    for (int i=0; i<n2 ; i++)
-//    {
-//
-//        if( i  <histos->size() ) {
-//            histo_title = fHistos->at(i)->GetTitle();
-//            outstr = Form( " %2d:  %s  ", i+1 , histo_title.Data() ) ;
-//        }
-//        else {
-//            histo_title = "";
-//            outstr = Form( "" ) ;
-//        }
-//
-//
-//
-//        fHisto_nameLabel[i] = new TGLabel( fHisto_frame, outstr );
-//
-//        fHisto_frame->AddFrame ( fHisto_nameLabel[i], Layout3 );
-//
-//
-//
-//    }
-//
-//    AddFrame( fHisto_frame, Layout1 );
-//    //-------------------------------------------------------|
-//
-//
-//
-//
-//
-//
-//    fHF_1 = new TGHorizontalFrame( this , 1, 1);
-//    fHF_2 = new TGHorizontalFrame( this , 200, 30);
-//
-//
-//    //-------------------------------------------------------------------| text entry
-//    fTextEntries =
-//    new TGTextEntry(  fHF_1, fHisto_list->Data(), 1);    /* base, init value, ID */
-//
-//
-//    int width = fHisto_frame->GetDefaultWidth() ;
-//    fTextEntries->Resize( width, fTextEntries->GetDefaultHeight() );
-//    fHF_1->AddFrame( fTextEntries, Layout2 );
-//
-//
-//
-//    //------------------------------------------------------------------| text entry: Connect
-//
-//    fTextEntries
-//        -> Connect( "TextChanged(char*)",
-//                    "Dlg_Operation_histos", this, "Update_entry_output(char*)");
-//
-//    fTextEntries
-//        -> Connect( "ProcessedEvent(Event_t*)",
-//                    "Dlg_Operation_histos", this,
-//                    "To_response_key(Event_t*)");
-//
-//
-//    //-------------------------------------------------------------------| btn: close the window
-//
-//    fBtn_close = new TGTextButton( fHF_2, "  OK  " );
-//    fBtn_close -> Connect( "Clicked()", "Dlg_Operation_histos", this, "CloseWindow()"  );
-//    fHF_2->AddFrame( fBtn_close, Layout2 );
-//    fBtn_close->Resize( 150, fBtn_close->GetDefaultHeight() );
-//
-//
-//    //-------------------------------------------------------------------| btn:  cancel the change
-//    fBtn_cancel = new TGTextButton( fHF_2, "Cancel" );
-//    fBtn_cancel -> Connect( "Clicked()", "Dlg_Operation_histos", this, "Cancel()"  );
-//    fHF_2->AddFrame( fBtn_cancel, Layout2 );
-//    fBtn_cancel->Resize(150, fBtn_cancel->GetDefaultHeight() );
-//
-//    AddFrame( fHF_1, Layout1 );
-//    AddFrame( fHF_2, Layout2 );
-//
-//
-//
-//    //-----------------------------------------------------------to focus on entry
-//    this->Connect(  "ProcessedEvent(Event_t*)", "Dlg_Operation_histos", this,
-//                    "To_focus_on_entry(Event_t*)" );
-//
-//
-//
-//
-//    SetName("Dlg_Operation_histos");
-//    SetWindowName("Histogram Operations");
-//    MapSubwindows();
-//    Resize( GetDefaultSize() );
-//    MapWindow();
-//
-//    gClient->WaitFor(this);
-//
-//
-//}
-//
-//
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -3387,7 +2820,8 @@ void Dlg_Operation_histos::Update_entry_output( char* entry_output ) {
 
 void Dlg_Operation_histos::del_spectra( TString epr ){
 
-    // del 1..3 means to del h1, h2, and h3
+    // del 1..3  means to delete h1, h2, and h3 ( continuous range )
+    // del 1 5 7 means to delete h1, h5, and h7
 
     Int_t    idx1stDot = -1;
     Int_t    idx2ndDot = -1;
@@ -3441,6 +2875,66 @@ void Dlg_Operation_histos::del_spectra( TString epr ){
     }
 
 
+
+
+    if( s2=="" ){
+
+        TObjArray* objarray = epr.Tokenize(" "); // separate by space
+        Int_t substringN = objarray->GetEntries();
+        vector<Int_t> idx_to_del;
+        vector<Int_t> idx_to_del_temp;
+
+
+        for( Int_t i = 1; i < substringN; i++ ) {
+
+            TString tmp =  ( (TObjString*)objarray->At(i) ) -> GetString();
+
+            Int_t idx = tmp.Atoi() - 1; // note: we label histo[0] as spec no.1
+
+            if( idx < fHistos->size() ) {
+
+                idx_to_del_temp.push_back( idx );
+
+            }
+        }
+
+        // to sort idx_to_del
+        while( 1 ){
+
+            Int_t min_idx = 999;
+            Int_t location = -1;
+
+            for( Int_t i = 0; i<idx_to_del_temp.size(); i++ )
+            {
+                if( idx_to_del_temp.at(i) < min_idx ) {
+
+                    min_idx = idx_to_del_temp.at(i);
+                    location = i;
+                }
+            }
+
+            idx_to_del.push_back( min_idx );
+            idx_to_del_temp.erase( idx_to_del_temp.begin() + location );
+            if( idx_to_del_temp.size() == 0 ){ break; }
+
+        } // ---- end of while loop.
+
+
+        // now we erase the selected histogram.
+        Int_t starting_idx;
+        TString msg = "";
+        for( Int_t i = 0; i<idx_to_del.size(); i++ ){
+
+            msg += Form("%d ", idx_to_del.at(i) + 1 );
+
+            starting_idx = idx_to_del.at(i) - i;
+
+            fHistos->erase( fHistos->begin() + starting_idx );
+
+        }
+
+         *fMessage = Form("delte spec %s", msg.Data() ) ;
+    }
 
 }
 

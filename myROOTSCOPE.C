@@ -5,7 +5,7 @@
 //***************************************/
 #include "myDialog.h"
 #include "myUtility.h"
-//#include "dev.h" // work: have to clean it up.
+
 #include <RVersion.h>
 #include <TGaxis.h>
 #include <TStyle.h>
@@ -2315,7 +2315,7 @@ void ROOTSCOPE::To_delete_histo_inSelectedPad() {
 
     // we remove the histogram displayed on the selected pad.
     // and it also be removed from histos<TH1*>.
-    // we replace whatever in the histos[0] to the current pad.
+    // we replace the next histogram to the current pad.
 
 
     int idx; // the histo idx we will remove.
@@ -2353,7 +2353,6 @@ void ROOTSCOPE::To_delete_histo_inSelectedPad() {
     */
 
 
-
     // Step 3: we have to figure out how to map the orginal histogram index
     /*
                     x
@@ -2372,8 +2371,10 @@ void ROOTSCOPE::To_delete_histo_inSelectedPad() {
         }
         else if ( fOpen_list.at(i) == idx )
         {
-             // use the first histogram (index = 0) to replace the remove one.
-             fOpen_list.at(i) = 0;
+
+             // we only change when we delete the last histo
+             if(idx == histos.size() ) {  fOpen_list.at(i)--; }
+
         }
         else if ( fOpen_list.at(i) > idx )
         {
@@ -2381,11 +2382,12 @@ void ROOTSCOPE::To_delete_histo_inSelectedPad() {
             fOpen_list.at(i)--;
         }
 
+
     }
 
 
 
-    /* // for checking
+     /*// for checking
         for ( Int_t i = 0; i < fOpen_list.size(); i++ ) {
         printf( " after modify, open_list[%d] = %d, histos.size() = %d, padactive = %d \n",
         i, fOpen_list.at(i), histos.size(), fPadActive );}
@@ -2587,6 +2589,7 @@ void ROOTSCOPE::_doing_overloap( TH1* h1, TH1* h2,
 
 void ROOTSCOPE::To_switch_overlap() {
 
+    Int_t activePadBackup = fPadActive;
 
     if( fSwitch_overlap%2==0 ) { fSwitch_overlap = 0; }
 
@@ -2603,7 +2606,9 @@ void ROOTSCOPE::To_switch_overlap() {
         _doing_overloap( h1, h2, fOverlaph1Idx, fOverlaph2Idx, 0 );
 
         fOverlapMode = true ;
-
+        fPadActive = activePadBackup;
+        // _doing_overlap function will change fPadActive,
+        // so I think it is a good idea to restore it.
     }
 
 
@@ -2614,11 +2619,18 @@ void ROOTSCOPE::To_switch_overlap() {
         // I add a condition of "Switch_overlap != 1"
         // fOverlapMode is to ensure that we indeed go through the first loop.
 
+
+
         fOpen_list.clear();
         fOpen_list.push_back( fOverlaph1Idx );
         fOpen_list.push_back( fOverlaph2Idx );
         To_display_histos( 0 );
         fOverlapMode = false;
+
+        fPadActive = activePadBackup;
+        Int_t hIdx = fOpen_list.at( fPadActive-1 );
+        histo = histos.at( hIdx );
+        // use activePadBackup to allow user to continue operate on the same pad.
 
     }
 
