@@ -13,9 +13,9 @@ Some of my favorite features:
 
 
 One can find the instruction in ROOTSCOPE_manual.pdf 
-or short video demonstrations:
-https://youtu.be/JPai6AgUc4E (part1)
-https://youtu.be/zYsBjWOEZeU (part2)
-https://youtu.be/LkU2O9L3Dlg (part3)
+or short video demonstrations: <br>
+https://youtu.be/JPai6AgUc4E (part1) <br>
+https://youtu.be/zYsBjWOEZeU (part2) <br>
+https://youtu.be/LkU2O9L3Dlg (part3) <br>
 
 Enjoy it.
