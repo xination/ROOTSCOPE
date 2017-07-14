@@ -2589,6 +2589,11 @@ void ROOTSCOPE::_doing_overloap( TH1* h1, TH1* h2,
 
 void ROOTSCOPE::To_switch_overlap() {
 
+    /*
+        we only overlap two pads, and use key "c" to
+        toggle the overlap mode.
+    */
+
     Int_t activePadBackup = fPadActive;
 
     if( fSwitch_overlap%2==0 ) { fSwitch_overlap = 0; }
@@ -2609,6 +2614,8 @@ void ROOTSCOPE::To_switch_overlap() {
         fPadActive = activePadBackup;
         // _doing_overlap function will change fPadActive,
         // so I think it is a good idea to restore it.
+
+
     }
 
 
@@ -2618,7 +2625,6 @@ void ROOTSCOPE::To_switch_overlap() {
         // we want the next time to enter this loop, so
         // I add a condition of "Switch_overlap != 1"
         // fOverlapMode is to ensure that we indeed go through the first loop.
-
 
 
         fOpen_list.clear();
@@ -2704,6 +2710,8 @@ void ROOTSCOPE::To_switch_histo( bool toIncrease ) {
     /*  This method links to the key reponse by arrow keys,
         which is used to switch the histogram.
 
+        I disable the switching in the overlap mode.
+
         Reminder:
         vector<int> fOpen_list is for the index of histos that we displayed
         fPadActive is the pad number for the selected pad.
@@ -2713,13 +2721,12 @@ void ROOTSCOPE::To_switch_histo( bool toIncrease ) {
     */
 
 
-
     Int_t activePadBackup = fPadActive;
 
 
     bool hasChange = false;
 
-    if( fPadTotalN == 1 )
+    if( fPadTotalN == 1 && fOverlapMode == 0 ) // disable switching in overlap mode.
     {
 
         // increase the index by 1
@@ -2740,8 +2747,9 @@ void ROOTSCOPE::To_switch_histo( bool toIncrease ) {
 
     }
 
-    if( fPadTotalN > 1 )
+    if( fPadTotalN > 1  )
     {
+
         int idx = fPadActive-1;
         if( toIncrease &&   fOpen_list[ idx ] < (histos.size()-1)    )
         {
