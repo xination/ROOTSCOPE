@@ -1,7 +1,7 @@
 //
 //   Author : Pei-Luan Tai
 //   Contact: pt10f@my.fsu.edu
-//   Last update: Dec 3, 2017
+//   Last update: May 2, 2017
 //***************************************/
 #include <vector>
 #include <TH1.h>
@@ -611,7 +611,7 @@ public:
                     const TGWindow*,     /* the windows transient from */
                     UInt_t ,             /* width */
                     UInt_t ,             /* height */
-                    TString* );
+                    TString* );          /* bg value passing by reference */
 
     void    To_response_key( Event_t* );
 
@@ -704,6 +704,7 @@ Dlg_Set_hTitle::Dlg_Set_hTitle( const TGWindow* p,
 
 
 
+
     TGLayoutHints*  Layout1 = new TGLayoutHints( kLHintsCenterY, 2, 2, 2, 2);
     TGLayoutHints*  Layout2 = new TGLayoutHints( kLHintsExpandX, 2, 2, 2, 2);
 
@@ -771,7 +772,6 @@ Dlg_Set_hTitle::Dlg_Set_hTitle( const TGWindow* p,
 }
 
 
-
 /////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -788,8 +788,9 @@ private:
     TGHorizontalFrame*  fHF_1;
     TGHorizontalFrame*  fHF_2;
     TGVerticalFrame*    fHisto_frame;
-    TGVerticalFrame*    fHisto_frame2;
-    TGLabel*	        fHisto_nameLabel[200]; // set a upper limit = 200
+    TGLabel*	        fHisto_nameLabel[100]; // set a upper limit = 100
+
+
 
     TGLabel*            fLabel;
     TGTextEntry*        fTextEntries;
@@ -805,7 +806,7 @@ public:
         const TGWindow* ,       /* base windows */
         UInt_t ,                /* width */
         UInt_t ,                /* height */
-        TString* histo_list,
+        TString* histo_list,    /* bg value passing by reference */
         vector<TH1*>  histos );
 
     void    To_response_key( Event_t* );
@@ -903,108 +904,42 @@ Dlg_Display_histos::Dlg_Display_histos(
     TGLayoutHints*  Layout2 = new TGLayoutHints( kLHintsExpandX, 2, 2, 2, 2);
     TGLayoutHints*  Layout3 = new TGLayoutHints( kLHintsLeft, 2, 2, 2, 2);
 
+
+    fHisto_frame =new TGVerticalFrame( this, 10, 10);
     Int_t nRow = 10;
     Int_t nCol = 0;
-    fHisto_frame =new TGVerticalFrame( this, 10, 10);
     fHisto_frame->SetLayoutManager ( new TGMatrixLayout( fHisto_frame , nRow, nCol) );
 
-
-    fHisto_frame2 =new TGVerticalFrame( this, 10, 10);
-    fHisto_frame2->SetLayoutManager ( new TGMatrixLayout( fHisto_frame2, nRow, nCol) );
 
     //-------------------------------------------------------| Labels
 
     TString outstr;
     TString histo_title;
 
-    // to set 10 entries for each column.
-    // for 101 to 200 entry we will put them into the second layer.
-    int n0 = histos.size() ;
+    // here is just for my own display choice.
     int n1 = histos.size() / 10;
     int n2 = ( n1 + 1) *10;
     if (n2 <= 10 ) n2 =20;
 
+    for (int i=0; i<n2 ; i++)
+    {
 
-    if( n0 <= 100 ) {
-
-        for (int i=0; i<n2 ; i++)
-        {
-
-            if( i  <histos.size() ) {
-                histo_title = fHistos.at(i)->GetTitle();
-
-                // to avoid lenghty title, we only print the last 15 char
-                if( histo_title.Length()>20 ) {
-                    histo_title
-                    = "..." + histo_title( histo_title.Length()-15, 15 ); }
-
-                outstr = Form( " %2d:  %s  ", i+1 , histo_title.Data() ) ;
-            }
-            else {
-                histo_title = "";
-                outstr = Form( "" ) ;
-            }
-
-
-            fHisto_nameLabel[i] = new TGLabel( fHisto_frame, outstr );
-            fHisto_frame->AddFrame ( fHisto_nameLabel[i], Layout3 );
-
+        if( i  <histos.size() ) {
+            histo_title = fHistos.at(i)->GetTitle();
+            outstr = Form( " %2d:  %s  ", i+1 , histo_title.Data() ) ;
+        }
+        else {
+            histo_title = "";
+            outstr = Form( "" ) ;
         }
 
-        AddFrame( fHisto_frame, Layout1 );
+
+        fHisto_nameLabel[i] = new TGLabel( fHisto_frame, outstr );
+        fHisto_frame->AddFrame ( fHisto_nameLabel[i], Layout3 );
 
     }
-    else {
 
-        for (int i=0; i<100 ; i++) {
-
-            if( i  <histos.size() ) {
-                histo_title = fHistos.at(i)->GetTitle();
-                // to avoid lenghty title, we only print the last 12 char
-                if( histo_title.Length()>15 ) {
-                    histo_title
-                    = "..." + histo_title( histo_title.Length()-12, 12 ); }
-                outstr = Form( " %2d:  %s  ", i+1 , histo_title.Data() ) ;
-            }
-            else {
-                histo_title = "";
-                outstr = Form( "" ) ;
-            }
-
-
-            fHisto_nameLabel[i] = new TGLabel( fHisto_frame, outstr );
-            fHisto_frame->AddFrame ( fHisto_nameLabel[i], Layout3 );
-
-        }
-        AddFrame( fHisto_frame, Layout1 );
-
-        Int_t n3 = TMath::Min( 200, n0 );
-
-        for (int i=100; i<n0 ; i++)
-        {
-
-            if( i  <histos.size() ) {
-                histo_title = fHistos.at(i)->GetTitle();
-                // to avoid lenghty title, we only print the last 12 char
-                if( histo_title.Length()>15 ) {
-                    histo_title
-                    = "..." + histo_title( histo_title.Length()-12, 12 ); }
-                outstr = Form( " %3d:  %s  ", i+1 , histo_title.Data() ) ;
-            }
-            else {
-                histo_title = "";
-                outstr = Form( "" ) ;
-            }
-
-
-            fHisto_nameLabel[i] = new TGLabel( fHisto_frame2, outstr );
-            fHisto_frame2->AddFrame ( fHisto_nameLabel[i], Layout3 );
-
-        }
-
-        AddFrame( fHisto_frame2, Layout1 );
-    }
-
+    AddFrame( fHisto_frame, Layout1 );
     //-------------------------------------------------------|
 
 
@@ -1074,6 +1009,7 @@ Dlg_Display_histos::Dlg_Display_histos(
 
 }
 /////////////////////////////////////////////////////////////////////////////////////
+
 
 
 
@@ -1518,9 +1454,9 @@ Dlg_Set_XRange::Dlg_Set_XRange( const TGWindow* p,
     TGLayoutHints*  Layout2 = new TGLayoutHints( kLHintsExpandX, 2, 2, 2, 2);
     fHF_btns = new TGHorizontalFrame( this , 200, 30);
 
-    //-------------------------------------------------------------------| Btn for OK
+    //-------------------------------------------------------------------| Btn for close the window
     fBtn_close = new TGTextButton( fHF_btns, "OK" );
-    fBtn_close -> Connect( "Clicked()", "Dlg_Set_XRange", this, "Update_marker()"  );
+    fBtn_close -> Connect( "Clicked()", "Dlg_Set_XRange", this, "CloseWindow()"  );
     fHF_btns->AddFrame( fBtn_close, Layout2);
 
     //-------------------------------------------------------------------| Btn for cancel the change
@@ -2781,8 +2717,7 @@ private:
     TGHorizontalFrame*  fHF_1;
     TGHorizontalFrame*  fHF_2;
     TGVerticalFrame*    fHisto_frame;
-    TGVerticalFrame*    fHisto_frame2;
-    TGLabel*	        fHisto_nameLabel[200]; // set a upper limit = 200
+    TGLabel*	        fHisto_nameLabel[100]; // set a upper limit = 100
 
 
 
@@ -2824,7 +2759,6 @@ public:
 
     void    del_spectra( TString epr );
 
-    void    to_display_histos( TString epr); 
 };
 
 
@@ -3481,27 +3415,6 @@ void Dlg_Operation_histos::General_case( TString epr ){
 }
 
 
-void Dlg_Operation_histos::to_display_histos( TString epr){
-    
-    // when inputs are all digits, ex "1 3 5" or " 2 2 2"
-
-    *fMessage = "open TH1 spectrum: ";
-
-    // validate ( to avoid out the index range )
-    TObjArray* tmp_array = epr.Tokenize(" ");
-    Int_t substringN = tmp_array->GetEntries();
-
-    for( Int_t i = 0; i < substringN; i++ ) {
-        TString s_tmp = ( (TObjString*)tmp_array->At(i) )->GetString();
-        int histo_idx = s_tmp.Atoi()-1;
-        
-        if ( histo_idx >=0 && histo_idx <= (fHistos->size()-1) ) { 
-        
-            *fMessage += s_tmp + " "; 
-        }
-    }
-
-}
 
 // this function parse the mathematical exprssion for the histogram
 // operations. We will validate the input before apply the expression.
@@ -3519,8 +3432,6 @@ void Dlg_Operation_histos::Parse_expression( ){
     if( epr.SubString("+=") != "" ) {  combo_case( epr ); }
 
     if( epr.SubString("del") != "" ) { del_spectra( epr); }
-
-    if( epr.IsDigit() ) { to_display_histos( epr ); }
 
     CloseWindow();
 
@@ -3557,102 +3468,40 @@ Dlg_Operation_histos::Dlg_Operation_histos(
     Int_t nCol = 0;
     fHisto_frame->SetLayoutManager ( new TGMatrixLayout( fHisto_frame , nRow, nCol) );
 
-    fHisto_frame2 =new TGVerticalFrame( this, 10, 10);
-    fHisto_frame2->SetLayoutManager ( new TGMatrixLayout( fHisto_frame2, nRow, nCol) );
 
     //-------------------------------------------------------| Labels
 
     TString outstr;
     TString histo_title;
 
-
-    // to set 10 entries for each column.
-    // for 101 to 200 entry we will put them into the secon layer.
-    int n0 = histos->size() ;
+    // here is just for my own display choice.
     int n1 = histos->size() / 10;
     int n2 = ( n1 + 1) *10;
     if (n2 <= 10 ) n2 =20;
 
+    for (int i=0; i<n2 ; i++)
+    {
 
-
-    if( n0 <= 100 ) {
-
-        for (int i=0; i<n2 ; i++)
-        {
-
-            if( i  <histos->size() ) {
-                histo_title = fHistos->at(i)->GetTitle();
-                if( histo_title.Length()>15 ) {
-                    histo_title
-                    = "..." + histo_title( histo_title.Length()-12, 12 ); }
-                outstr = Form( " %2d:  %s  ", i+1 , histo_title.Data() ) ;
-            }
-            else {
-                histo_title = "";
-                outstr = Form( "" ) ;
-            }
-
-
-            fHisto_nameLabel[i] = new TGLabel( fHisto_frame, outstr );
-            fHisto_frame->AddFrame ( fHisto_nameLabel[i], Layout3 );
-
+        if( i  <histos->size() ) {
+            histo_title = fHistos->at(i)->GetTitle();
+            outstr = Form( " %2d:  %s  ", i+1 , histo_title.Data() ) ;
+        }
+        else {
+            histo_title = "";
+            outstr = Form( "" ) ;
         }
 
-        AddFrame( fHisto_frame, Layout1 );
+
+
+        fHisto_nameLabel[i] = new TGLabel( fHisto_frame, outstr );
+
+        fHisto_frame->AddFrame ( fHisto_nameLabel[i], Layout3 );
+
+
 
     }
-    else {
 
-
-        for (int i=0; i<100 ; i++) {
-
-            if( i  <histos->size() ) {
-                histo_title = fHistos->at(i)->GetTitle();
-                if( histo_title.Length()>15 ) {
-                    histo_title
-                    = "..." + histo_title( histo_title.Length()-12, 12 ); }
-                outstr = Form( " %2d:  %s  ", i+1 , histo_title.Data() ) ;
-            }
-            else {
-                histo_title = "";
-                outstr = Form( "" ) ;
-            }
-
-
-            fHisto_nameLabel[i] = new TGLabel( fHisto_frame, outstr );
-            fHisto_frame->AddFrame ( fHisto_nameLabel[i], Layout3 );
-
-        }
-        AddFrame( fHisto_frame, Layout1 );
-
-        Int_t n3 = TMath::Min( 200, n0 );
-
-
-
-        for (int i=100; i<n0 ; i++)
-        {
-
-            if( i < histos->size() ) {
-                histo_title = fHistos->at(i)->GetTitle();
-                if( histo_title.Length()>15 ) {
-                    histo_title
-                    = "..." + histo_title( histo_title.Length()-12, 12 ); }
-                outstr = Form( " %3d:  %s  ", i+1 , histo_title.Data() ) ;
-            }
-            else {
-                histo_title = "";
-                outstr = Form( "" ) ;
-            }
-
-
-            fHisto_nameLabel[i] = new TGLabel( fHisto_frame2, outstr );
-            fHisto_frame2->AddFrame ( fHisto_nameLabel[i], Layout3 );
-
-        }
-
-        AddFrame( fHisto_frame2, Layout1 );
-    }
-
+    AddFrame( fHisto_frame, Layout1 );
     //-------------------------------------------------------|
 
 

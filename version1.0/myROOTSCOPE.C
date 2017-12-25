@@ -1,16 +1,15 @@
 //
 //   Author : Pei-Luan Tai
 //   Contact: pt10f@my.fsu.edu
-//   Last update: Dec 13, 2017
+//   Last update: May 2, 2017
 //***************************************/
 #include "myDialog.h"
-#include "myDialog_2D.h"
 #include "myUtility.h"
-#include "dev.h"
 
 #include <RVersion.h>
 #include <TGaxis.h>
 #include <TStyle.h>
+#include <RVersion.h>
 #include <TGWindow.h>
 #include <TGFrame.h>
 #include <TLine.h>
@@ -28,7 +27,6 @@
 #include <TObject.h>
 #include <TCanvas.h>
 #include <TMath.h>
-#include <TCutG.h>
 #include <TFile.h>
 #include <TBox.h>
 #include <TRootEmbeddedCanvas.h>
@@ -36,9 +34,9 @@
 #include <TGNumberEntry.h>
 #include <TGTextViewStream.h>
 
-#include <fstream>
 
 using namespace std;
+
 
 
 
@@ -109,15 +107,14 @@ private:
     Int_t               fLogScale_style;    /* switch for log scale. */
     Int_t               fH2_style;          /* the draw style for TH2 */
     Int_t               fH2_marker_style;   /* the marker style for TH2 */
-    Int_t               fH2_marker_color;   /* the marker color for TH2 */
     static const char*  styleDraw[3];
     static const Int_t  styleMarkersize[5];
-    static const Int_t  styleMarkercolor[6];
+
 
 
     //---------------for the array of histos---------------------//
 
-    vector<TH1*>        histos;              /* the 1D histos */
+    vector<TH1*>        histos;              /* the 1D histo created from histo2d */
     vector<TH1*>        histos_backup;       /* backups that used in compress/uncompress */
 
     vector<int>         fOpen_list;          /* the list of idx for the diplayed histograms */
@@ -125,15 +122,6 @@ private:
     Int_t               ftemp_lineN;
     TLine*              fTmpSet1_lines[10];   /* for temp lines */
     TLine*              fTmpSet2_lines[10];   /* for temp lines */
-
-
-
-
-    //---------------for the array of histo2ds---------------------//
-    vector<TH2*>        histo2ds;              /* the 2D histos */
-    vector<TH2*>        histo2ds_backup;       /* backups that used in compress/uncompress */
-
-    vector<int>         fOpen2d_list;          /* the list of idx for the diplayed histograms */
 
 
 
@@ -151,13 +139,8 @@ private:
     TRootEmbeddedCanvas *emb_Canvas;     /* Canvas container */
     TCanvas             *c1;             /* Canvas  */
     TGTextViewostream   *fText_viewer;   /* for show user message */
-    TGMenuBar           *fMenuBar;          /* menu bar */
-    TGPopupMenu         *fMenu_Entries[5];  /* pop-up menu entries */
-    bool                 fToUseMenuBar;
 
     void To_backup_histos();
-
-    void To_backup_histo2ds();
 
     void To_writeoutFile();
 
@@ -203,8 +186,6 @@ private:
     void To_show_histo_operation_dlg( );
 
     void To_display_histos(  bool showMSG   );
-
-
 
     void To_switch_histo( bool toIncrease );
 
@@ -256,11 +237,7 @@ private:
 
     void Rebin_2d(bool flagXY, bool flag2 );
 
-    void To_display_histo2ds(  bool showMSG   );
-
-    void To_display_histo2d_quick();
-
-    void To_show_histo2d_operation_dlg();
+    void To_display_histo2d();
 
     void To_Back_to_disply_histos();
 
@@ -269,11 +246,8 @@ private:
 
     void To_change_marker_size();
 
-    void To_change_marker_color();
-
     void To_set_logscale(); //also for 1d
 
-    void To_switch_histo2d( bool toIncrease );
 
 
 
@@ -301,8 +275,6 @@ private:
 
     void Single_pad_setting();
 
-    void Add_note(Event_t*);
-
     void Set_CannotMove();
 
     void Initialization();
@@ -312,15 +284,6 @@ private:
     bool Remove_default_empty_histo();
 
     Dlg_Set_Background* fdlg_test;
-
-    void welcome_info();
-
-    void Show_version();
-
-    void Show_command_1d();
-
-    void Show_command_2d();
-
 
 
 public:
@@ -339,9 +302,7 @@ public:
 
 
 
-    void To_response(Event_t*);  // to response key press from user.
-
-    void To_response_menu( Int_t ); // to response menu bar selection.
+    void To_response(Event_t*);  // to response key press from user
 
     TH2* GetTwoDHisto();
 
@@ -350,10 +311,6 @@ public:
     void SetTwoDHisto( TH2* h2d_input );
 
     void AddOneDHisto( TH1* h_input );
-
-
-    template <class T>
-    void AddHisto(T* input);
 
     TString GetMessage(){ return fText_viewer->GetText()->AsString();  }
 
@@ -367,8 +324,8 @@ const char* ROOTSCOPE::styleDraw[3] = {"",  "COL2", "COLZ2" };
 
 const int   ROOTSCOPE::styleMarkersize[5] = { 1, 6 , 7,  20 };
 
-const int   ROOTSCOPE::styleMarkercolor[6] =
-    {  kBlack, kRed , kGreen, kBlue, kMagenta, kOrange };
+
+
 
 
 void ROOTSCOPE::To_response(Event_t* e) {
@@ -449,13 +406,9 @@ void ROOTSCOPE::To_response(Event_t* e) {
 
             else if( e->fCode == key_arrow_right )  { Go_half_right( ); }
 
-	    else if( key_symbol ==  kKey_4 )    { Go_half_left(); }
+            else if( e->fCode == key_arrow_up )    { To_switch_histo(1); }
 
-            else if( key_symbol ==  kKey_6 )    { Go_half_right(); }
-
-            else if( key_symbol ==  kKey_PageUp )    { To_switch_histo(1); }
-
-            else if( key_symbol ==  kKey_PageDown  )  { To_switch_histo(0); }
+            else if( e->fCode == key_arrow_down )  { To_switch_histo(0); }
 
 
 
@@ -484,6 +437,8 @@ void ROOTSCOPE::To_response(Event_t* e) {
 
             else if( key_symbol == kKey_X ) { Rebin_uncompress(); }
 
+            else if( key_symbol == kKey_d  ) { To_show_histo_dlg( ); }
+
             else if( key_symbol == kKey_V  ) { To_show_histo_operation_dlg( ); }
 
             else if( key_symbol == kKey_F1  ) { To_change_fillstyle(); }
@@ -491,6 +446,7 @@ void ROOTSCOPE::To_response(Event_t* e) {
             else if( key_symbol == kKey_F2  ) { To_change_linewidth(); }
 
             else if( key_symbol == kKey_F3  ) { To_set_logscale(); }
+
 
         }
 
@@ -527,7 +483,7 @@ void ROOTSCOPE::To_response(Event_t* e) {
             else if( key_symbol == kKey_r  ) { To_readinFile(); }
 
             // ctl + q
-            else if( key_symbol == kKey_q  ) { To_display_histo2d_quick(); }
+            else if( key_symbol == kKey_q  ) { To_display_histo2d(); }
 
             // ctl + f
             else if( key_symbol == kKey_f  ) { To_show_find_peaks_dlg(); }
@@ -535,7 +491,6 @@ void ROOTSCOPE::To_response(Event_t* e) {
             // ctl + p
             else if( key_symbol == kKey_p  ) { To_show_AddSub_gate_dlg(); }
 
-            else if( key_symbol == kKey_n  ) { Add_note(e); }
         }
 
     } //-------------------------------------end of key reponses for TH1 obj
@@ -552,9 +507,11 @@ void ROOTSCOPE::To_response(Event_t* e) {
         //_______key
         if ( e->fType == kGKeyPress && !isCtrl && !isAlt ) {
 
+            if( key_symbol == kKey_d  ) { To_show_histo_dlg( ); }
 
+            else if( key_symbol == kKey_V  ) { To_show_histo_operation_dlg( ); }
 
-                 if( key_symbol == kKey_q  ) { To_Back_to_disply_histos(); }
+            else if( key_symbol == kKey_q  ) { To_Back_to_disply_histos(); }
 
             else if( key_symbol == kKey_p  ) { Projection_2d( 1 ); }
 
@@ -572,14 +529,12 @@ void ROOTSCOPE::To_response(Event_t* e) {
 
             else if( key_symbol == kKey_F3  ) { To_set_logscale( ); }
 
-            else if( key_symbol == kKey_F4  ) { To_change_marker_color( ); }
-
 
             else if( key_symbol == kKey_s )  { Get_Sum(1); }
 
-            else if( key_symbol == kKey_Z )  { Set_Z_Range(1); } // set z max
+            else if( key_symbol == kKey_z )  { Set_Z_Range(1); } // set z max
 
-            else if( key_symbol == kKey_z )  { Set_Z_Range(0); } // set z min
+            else if( key_symbol == kKey_Z )  { Set_Z_Range(0); } // set z min
 
 
             else if( key_symbol == kKey_x ) { Rebin_2d(1, 1); }
@@ -589,11 +544,6 @@ void ROOTSCOPE::To_response(Event_t* e) {
             else if( key_symbol == kKey_y ) { Rebin_2d(0, 1); }
 
             else if( key_symbol == kKey_Y ) { Rebin_2d(0, 0); }
-
-
-            else if( key_symbol ==  kKey_PageUp )    { To_switch_histo2d(1); }
-
-            else if( key_symbol ==  kKey_PageDown )  { To_switch_histo2d(0); }
 
 
 
@@ -613,19 +563,6 @@ void ROOTSCOPE::To_response(Event_t* e) {
 
     } //--------------------------------- end of key reponses for TH2 obj
 
-
-
-
-    // for both TH1 and TH2
-    if( 1 ) {
-
-        //_______key
-        if ( e->fType == kGKeyPress && !isCtrl && !isAlt  )  {
-
-                 if( key_symbol == kKey_d  ) { To_show_histo_operation_dlg( ); }
-            else if( key_symbol == kKey_A  ) { To_show_histo2d_operation_dlg( ); }
-        }
-    }
 
 }
 
@@ -1018,7 +955,6 @@ void ROOTSCOPE::Get_active_histo1D() {
         h2temp = dynamic_cast<TH2*> ( element );
         if ( h2temp == nullptr ) continue;
         fIsTH2_inPad = true;
-	histo2d = h2temp;
     }
 
 
@@ -1032,7 +968,6 @@ void ROOTSCOPE::Get_active_histo1D() {
 
 void ROOTSCOPE::Initialization() {
 
-    fToUseMenuBar = true;
 
     const Int_t nfoundMax = 100;
     peakFinder = new TSpectrum( nfoundMax );
@@ -1049,7 +984,6 @@ void ROOTSCOPE::Initialization() {
     fCmp = 1;
     fH2_style = 0;
     fH2_marker_style = 0;
-    fH2_marker_color = 0;
     fLogScale_style = 0;
     fH1_fillstyle = 0;
     fH1_linewidth = 1;
@@ -1111,177 +1045,7 @@ void ROOTSCOPE::Create_Widgets( UInt_t w, UInt_t h  ) {
 
     /* create widgets and link c1 canvas */
 
-
-    if( fToUseMenuBar ) {
-
-        fMenuBar
-        = new TGMenuBar( this,   /* parent */
-                         35, 50, /* width and height */
-                         kHorizontalFrame );
-
-        TGHotString* sText2 = new TGHotString("for style");
-        TGHotString* sText1 = new TGHotString("for analysis");
-
-        // ============FILE============ [0-99]
-        fMenu_Entries[0] = new TGPopupMenu( gClient->GetRoot() );
-        fMenu_Entries[0]->AddEntry( Form("%-20s\t%6s", "Read in", "ctrl+r"),  0 );
-        fMenu_Entries[0]->AddEntry( Form("%-20s\t%6s", "Write out ", "ctrl+w"), 1 );
-        fMenuBar->AddPopup( "File", fMenu_Entries[0],
-                new TGLayoutHints( kLHintsTop|kLHintsLeft, 10,10,0,0 )  );
-        fMenu_Entries[0]->Connect( "Activated(Int_t)", /* signal*/
-                             "ROOTSCOPE", this,        /* receiver class, object*/
-                             "To_response_menu( Int_t)");
-
-
-
-
-        // ============1D_histo============ [ 100-199]
-        fMenu_Entries[1] = new TGPopupMenu( gClient->GetRoot() );
-
-        fMenu_Entries[1]->AddEntry( Form("%-20s\t%6s", "display 1D histo", "d"), 100 );
-
-        fMenu_Entries[1]->
-            AddEntry( Form("%-20s\t%6s", "show commands",""), 101 );
-
-        fMenu_Entries[1]->AddEntry( Form("%-20s\t%6s", "expend cursor region","e"),102);
-
-        fMenu_Entries[1]->AddEntry( Form("%-20s\t%6s", "expand region","E"), 103 );
-
-        fMenu_Entries[1]->AddEntry( Form("%-20s\t%6s", "Unexpand","o"), 104 );
-
-        fMenu_Entries[1]->AddEntry( Form("%-20s\t%6s", "set y range","y"), 105 );
-
-        fMenu_Entries[1]->AddEntry( Form("%-20s\t%6s", "rebin compress","x"), 106 );
-
-        fMenu_Entries[1]->AddEntry( Form("%-20s\t%6s", "rebin uncompress","X"), 107 );
-
-        fMenu_Entries[1]->AddEntry( Form("%-20s\t%6s", "modify x range","alt+r"), 108 );
-
-        fMenu_Entries[1]->
-            AddEntry( Form("%-20s\t%6s", "overlap two 1D histos","ctrl+d"), 109 );
-
-
-
-        fMenu_Entries[1]->AddSeparator();
-
-        fMenu_Entries[1]->AddLabel( sText1 );
-
-        fMenu_Entries[1]->AddEntry( Form("%-20s\t%6s", "fit single Gaussian","g"), 110 );
-
-        fMenu_Entries[1]->AddEntry( Form("%-20s\t%6s", "fit double Gaussian","G"), 111 );
-
-        fMenu_Entries[1]->AddEntry( Form("%-20s\t%6s", "fit const bg","b"), 112 );
-
-        fMenu_Entries[1]->AddEntry( Form("%-20s\t%6s", "fit linear bg","1"), 113 );
-
-        fMenu_Entries[1]->AddEntry( Form("%-20s\t%6s", "set const bg","alt+b"),114);
-
-        fMenu_Entries[1]->AddEntry( Form("%-20s\t%6s", "get sum","s"), 115 );
-
-        fMenu_Entries[1]->AddEntry( Form("%-20s\t%6s", "clean markers","n"), 116 );
-
-        fMenu_Entries[1]->AddEntry( Form("%-20s\t%6s", "find peaks","f"), 117 );
-
-        fMenu_Entries[1]->AddEntry( Form("%-20s\t%6s", "find peaks setting","ctrl+f"), 118 );
-
-
-
-        fMenu_Entries[1]->AddSeparator();
-
-
-        fMenu_Entries[1]->AddLabel( sText2 );
-
-        fMenu_Entries[1]->AddEntry( Form("%-20s\t%6s", "change title","t"), 119 );
-
-        fMenu_Entries[1]->AddEntry( Form("%-20s\t%6s", "change fill style","F1"), 120 );
-
-        fMenu_Entries[1]->AddEntry( Form("%-20s\t%6s", "change line width","F2"), 121 );
-
-        fMenu_Entries[1]->AddEntry( Form("%-20s\t%6s", "change log scale","F3"), 122 );
-
-        fMenu_Entries[1]->
-            Connect( "Activated(Int_t)", "ROOTSCOPE", this,"To_response_menu( Int_t)");
-
-
-        fMenuBar->AddPopup( "1D_histo", fMenu_Entries[1],
-            new TGLayoutHints( kLHintsTop|kLHintsLeft, 10,10,0,0 )  );
-
-
-        // ============2D_histo============[200-299]
-        fMenu_Entries[2] = new TGPopupMenu( gClient->GetRoot() );
-
-        fMenu_Entries[2]->AddEntry( Form("%-20s\t%6s", "display 2D hitos","A"),200);
-
-        fMenu_Entries[2]-> AddEntry( Form("%-20s\t%6s", "show commands",""), 201 );
-
-        fMenu_Entries[2]-> AddEntry( Form("%-20s\t%6s", "project to x","p"), 202 );
-
-        fMenu_Entries[2]-> AddEntry( Form("%-20s\t%6s", "project to y","P"), 203 );
-
-
-
-        fMenu_Entries[2]->AddEntry( Form("%-20s\t%6s", "expend cursor region","e"),204);
-
-        fMenu_Entries[2]->AddEntry( Form("%-20s\t%6s", "Unexpand","o"),205);
-
-
-        fMenu_Entries[1]->AddEntry( Form("%-20s\t%6s", "rebin compress x","x"), 206 );
-
-        fMenu_Entries[1]->AddEntry( Form("%-20s\t%6s", "rebin uncompress x","X"), 207 );
-
-        fMenu_Entries[1]->AddEntry( Form("%-20s\t%6s", "rebin compress y","y"), 208 );
-
-        fMenu_Entries[1]->AddEntry( Form("%-20s\t%6s", "rebin uncompress y","Y"), 209 );
-
-
-        fMenu_Entries[2]->AddSeparator();
-
-        fMenu_Entries[2]->AddLabel( sText1 );
-
-        fMenu_Entries[2]->AddEntry( Form("%-20s\t%6s", "get sum","s"),210);
-
-        fMenu_Entries[2]->AddEntry( Form("%-20s\t%6s", "set max z","Z"),211);
-
-        fMenu_Entries[2]->AddEntry( Form("%-20s\t%6s", "set min z","z"),212);
-
-
-
-        fMenu_Entries[2]->AddSeparator();
-
-        fMenu_Entries[2]->AddLabel( sText2 );
-
-        fMenu_Entries[2]->AddEntry( Form("%-20s\t%6s", "change style","F1"), 213 );
-
-        fMenu_Entries[2]->AddEntry( Form("%-20s\t%6s", "change marker size","F2"), 214 );
-
-        fMenu_Entries[2]->AddEntry( Form("%-20s\t%6s", "change log scale ","F3"), 215 );
-
-        fMenu_Entries[2]->AddEntry( Form("%-20s\t%6s", "change color","F4"), 216 );
-
-
-        fMenu_Entries[2] ->
-	    Connect( "Activated(Int_t)", "ROOTSCOPE", this,"To_response_menu( Int_t)");
-        fMenuBar->AddPopup( "2D_histo", fMenu_Entries[2],
-            new TGLayoutHints( kLHintsTop|kLHintsLeft, 10,10,0,0 )  );
-
-
-        // ============About============
-        fMenu_Entries[3] = new TGPopupMenu( gClient->GetRoot() );
-        fMenu_Entries[3]->AddEntry( "about versions", 20 );
-
-        fMenu_Entries[3]->
-            Connect( "Activated(Int_t)", "ROOTSCOPE", this,"To_response_menu( Int_t)");
-        fMenuBar->AddPopup( "About", fMenu_Entries[3],
-            new TGLayoutHints( kLHintsTop|kLHintsLeft, 10,10,0,0 )  );
-
-
-
-
-        AddFrame(fMenuBar, new TGLayoutHints(kLHintsTop, 0,0,2,2) );
-
-    }
-
-    //------------------------------------------------------------------|
+     //------------------------------------------------------------------|
     fText_viewer =  new TGTextViewostream (	this, 400, 100 );
                                             /* parent, width, height */
 
@@ -1722,6 +1486,7 @@ void ROOTSCOPE::Fit_Double_Gaussian() {
 
         if( init_h1==0 && init_c1==0 && init_sigma1==0 &&
             init_h2==0 && init_c2==0 && init_sigma2==0) { isNoValues = true; }
+        // it happens when we press "cancel" btn.
     }
 
 
@@ -1797,37 +1562,20 @@ void ROOTSCOPE::Fit_Double_Gaussian() {
          if( fTF1_double_gaus_bg->GetNDF() != 0 ) {
             chisqr = fTF1_double_gaus_bg->GetChisquare()/fTF1_double_gaus_bg->GetNDF();
         }
-	// to print the peak in the order of channel ( from small to large )
-	if( fitted_c1 < fitted_c2 ) {
 
-	    *fText_viewer
-            <<
-            Form( "\nPeak1 Center = %5.3f, Area/cmp = %5.2f, FWHM = %5.2f\n",
-                fitted_c1, area1/fCmp, FWHM1 )
-            <<
-            Form( "Peak2 Center = %5.3f, Area/cmp = %5.2f, FWHM = %5.2f\n",
-                fitted_c2, area2/fCmp, FWHM2 )
-            <<
-            Form( "Chisqr/N = %5.2f (cmp=%d)", chisqr, fCmp )
-            <<  endl;
-            fText_viewer->ShowBottom();
 
-	}
-	else {
 
-	    *fText_viewer
-            <<
-            Form( "\nPeak1 Center = %5.3f, Area/cmp = %5.2f, FWHM = %5.2f\n",
-                fitted_c2, area2/fCmp, FWHM2 )
-            <<
-            Form( "Peak2 Center = %5.3f, Area/cmp = %5.2f, FWHM = %5.2f\n",
-                fitted_c1, area1/fCmp, FWHM1 )
-            <<
-            Form( "Chisqr/N = %5.2f (cmp=%d)", chisqr, fCmp )
-            <<  endl;
-            fText_viewer->ShowBottom();
-	}
-
+        *fText_viewer
+        <<
+        Form( "\nPeak1 Center = %5.3f, Area/cmp = %5.2f, FWHM = %5.2f\n",
+            fitted_c1, area1/fCmp, FWHM1 )
+        <<
+        Form( "Peak2 Center = %5.3f, Area/cmp = %5.2f, FWHM = %5.2f\n",
+            fitted_c2, area2/fCmp, FWHM2 )
+        <<
+        Form( "Chisqr/N = %5.2f (cmp=%d)", chisqr, fCmp )
+        <<  endl;
+        fText_viewer->ShowBottom();
 
     }
 
@@ -2432,27 +2180,6 @@ void ROOTSCOPE::Set_Xrange_pick( float x) {
 }
 
 
-void ROOTSCOPE::To_backup_histo2ds() {
-
-    // to clone the histo2ds to histo2ds_backup
-
-    histo2ds_backup.clear();
-
-    int histo2d_size = histo2ds.size();
-
-    if( histo2d_size !=0 ) {
-
-        for( int i=0; i<histo2d_size; i++ )
-        {
-            histo2ds_backup.
-                push_back(  (TH2*) histo2ds.at(i)->Clone() );
-
-        }
-    }
-
-}
-
-
 void ROOTSCOPE::To_backup_histos() {
 
     // to clone the histos to histos_backup
@@ -2474,41 +2201,6 @@ void ROOTSCOPE::To_backup_histos() {
 }
 
 
-void ROOTSCOPE::To_display_histo2ds( bool showMSG  ){
-
-
-    if( fOpen2d_list.size() > 0 ) {
-
-	fPadTotalN = fOpen2d_list.size();
-
-	c1->Clear();
-        c1->SetMargin( 0.05, 0.05, 0.1, 0.1);
-        c1->Divide( fPadTotalN, 1, 0, 0 );  // xmarign=0, ymargin=0
-
-        fPadActive = 1;
-        fIsTH2_inPad = true;
-	fHasTH2 = true;
-	histo2d = histo2ds.at( fOpen2d_list.at(0) );
-        histo2d_backup = histo2ds_backup.at( fOpen2d_list.at(0) );
-
-	for( int i=0; i<fPadTotalN; i++ )
-        {
-
-            c1->cd( i+1 ); // pad idx starts from 1 ( not 0 )!!!
-
-            histo2ds.at(  fOpen2d_list.at(i) )->Draw( styleDraw[fH2_style] );
-
-        }
-        c1->Update();
-
-    }
-    else {
-
-          *fText_viewer << " we don't have TH2 to in the open list"  <<  endl;
-	  fText_viewer->ShowBottom();
-    }
-
-}
 
 
 void ROOTSCOPE::To_display_histos( bool showMSG  ){
@@ -3013,42 +2705,11 @@ void ROOTSCOPE::To_overlap_histos() {
 }
 
 
-void ROOTSCOPE::To_switch_histo2d( bool toIncrease ) {
-
-    /*
-        for TH2 case, currently, only one pad.
-    */
-
-
-    bool hasChange = false;
-
-    // increase the index by 1
-    if( toIncrease &&   fOpen2d_list[0] < (histo2ds.size()-1)    )
-    {
-        fOpen2d_list[0] ++;   hasChange = true;
-    }
-
-    // decrease the index by 1
-    if( !toIncrease && fOpen2d_list[0] >0 )
-    {
-        fOpen2d_list[0] --;   hasChange = true;
-
-    }
-
-    *fText_viewer
-    << Form("switch to spec#%d",fOpen2d_list[0] + 1 )  <<  endl;
-    fText_viewer->ShowBottom();
-
-
-    bool showMSG;
-    if( hasChange) To_display_histo2ds( showMSG = false );
-
-}
-
-
 void ROOTSCOPE::To_switch_histo( bool toIncrease ) {
 
-    /*
+    /*  This method links to the key reponse by arrow keys,
+        which is used to switch the histogram.
+
         I disable the switching in the overlap mode.
 
         Reminder:
@@ -3129,150 +2790,26 @@ void ROOTSCOPE::To_Back_to_disply_histos() {
 }
 
 
-
-void ROOTSCOPE::To_show_histo2d_operation_dlg() {
-
-    TString histo2d_operated = "";
-    TString output_message = "";
-    TString instruction = "";
-
-    // Dlg_Operation_histo2ds class will display
-    // a dialog to let user to type in some command.
-    // then according to the user command, we get the different
-    // output message. We use it as the key to do the specific task.
-    new Dlg_Operation_histo2ds( gClient->GetRoot(),
-        500, 400,
-        &histo2d_operated, &histo2ds, &output_message);
-
-    // to display a TH2 histogram
-    // when we just type in number, however, currently,
-    // only the first number's TH2 will be displayed.
-    if( output_message.Contains("to show TH2:")  ){
-        fOpen2d_list.clear();
-
-	TObjArray* tmp_array = histo2d_operated.Tokenize(" ");
-    	Int_t substringN = tmp_array->GetEntries();
-
-    	for( Int_t i = 0; i < substringN; i++ ) {
-    	    TString s_tmp = ( (TObjString*)tmp_array->At(i) )->GetString();
-	    fOpen2d_list.push_back( s_tmp.Atoi() );
-    	}
-        To_backup_histo2ds();
-        To_display_histo2ds( 0 );
-    }
-
-
-
-    // make a TCutG
-    // command as "cut 2" or "cut"
-    if( output_message.Contains("to cut TH2:")   ){
-
-       instruction = "start making a cut.\nmouse click to make the point.\ndouble right click to end.\n";
-	*fText_viewer << Form( "%s",instruction.Data() )  <<  endl;
-	fText_viewer->ShowBottom();
-
-        if( histo2d_operated.Atoi() > 0 ) {
-            // when we specify which TH2 to cut, ie. "cut 2"
-            fOpen2d_list.clear();
-            fOpen2d_list.push_back( histo2d_operated.Atoi()-1 );
-        } else {
-            // when we don't specify which TH2 to cut,
-            // then just use the current TH2
-            //
-            // if there is no current TH2, then
-            // we use the first TH2 .
-            //
-            if( fOpen2d_list.size() == 0 ) {
-
-                fOpen2d_list.push_back( 0 );
-            }
-        }
-
-        To_display_histo2ds( 0 );
-
-        TCutG* mycut = (TCutG*)gPad->WaitPrimitive("CUTG","CutG");
-        mycut->SetLineColor( kRed );
-        mycut->Draw("same");
-        mycut->SetName( Form( "a_new_cut%f", gRandom->Uniform() ) );
-
-	// we also write out the cut information to file
-	fstream fOut;
-	fOut.open("./temp_cut.dat", ios::out);
-	TString outStr="";
-
-	int totalPoints = mycut->GetN();
-	for( int i=0; i<totalPoints; i++) {
-	    double temp_x, temp_y;
-	    mycut->GetPoint( i, temp_x, temp_y );
-	    outStr += Form( "%d\t%20.10f\t%20.10f\n",i, temp_x, temp_y);
-	}
-	fOut <<  outStr.Data() ;
-	fOut.close();
-	instruction = "cut is set, we also write points info to temp_cut.dat";
-	*fText_viewer << Form( "%s",instruction.Data() )  <<  endl;
-	fText_viewer->ShowBottom();
-    }
-
-    // to overlap two 2D histos
-    // command as "overlap 1 2"
-    if( output_message.Contains("to overlap TH2:")   ){
-
-	TObjArray* tmp_array = histo2d_operated.Tokenize(" ");
-	TString tmp_a = ( (TObjString*)tmp_array->At(0) )->GetString();
-	TString tmp_b = ( (TObjString*)tmp_array->At(1) )->GetString();
-
-
-        c1->Clear();
-        c1->SetMargin( 0.05, 0.05, 0.1, 0.1);
-        c1->cd();
-
-        histo2d = histo2ds.at( tmp_a.Atoi()-1 );
-        histo2d->Draw();
-	histo2ds.at( tmp_b.Atoi()-1 ) -> Draw( "same");
-        fPadActive = 0;     // single pad
-        fPadTotalN = 1;
-        c1->Update();
-
-    }
-}
-
-
-
 void ROOTSCOPE::To_show_histo_operation_dlg() {
 
     /* pop a dialog for user to input expression, ex:
         99 = 1 + 2 ( then we do histos[0] + histos[1] )
     */
 
-    TString histo_operated = "";
+    TString histo_list = "";
     TString output_message = "";
 
+
     new Dlg_Operation_histos( gClient->GetRoot(), 500, 400,
-                             &histo_operated, &histos, &output_message );
+                             &histo_list, &histos, &output_message );
 
-    if( output_message.Contains("open TH1 spectrum:") ) {
+    *fText_viewer << output_message.Data()  <<  endl;
+    fText_viewer->ShowBottom();
 
-        // parse the output message and then fill info into fOpen_list
-        TObjArray* tmp_array = output_message.Tokenize(" ");
-        Int_t substringN = tmp_array->GetEntries();
-        fOpen_list.clear();
-        for( Int_t i = 0; i < substringN; i++ ) {
-            TString s_tmp = ( (TObjString*)tmp_array->At(i) )->GetString();
-            if( s_tmp.IsDigit() ) { fOpen_list.push_back( s_tmp.Atoi()-1 ) ; }
-        }
+    // open the one we just operated.
+    fOpen_list.clear();
 
-        // to avoid the empty opne list
-        if( fOpen_list.size() == 0 ) { fOpen_list.push_back(0); }
-
-    } else {
-
-        // open the one we just operated.
-        fOpen_list.clear();
-        fOpen_list.push_back( histo_operated.Atoi() );
-        *fText_viewer << output_message.Data()  <<  endl;
-        fText_viewer->ShowBottom();
-    }
-
+    fOpen_list.push_back( histo_list.Atoi() );
     To_backup_histos();
     To_display_histos(1);
 }
@@ -3559,7 +3096,7 @@ void ROOTSCOPE::Projection_2d( bool flagXY ){
 }
 
 
-void ROOTSCOPE::To_display_histo2d_quick() {
+void ROOTSCOPE::To_display_histo2d() {
 
     /* display histo2d */
 
@@ -3847,10 +3384,6 @@ void ROOTSCOPE::To_set_logscale(){
 
     }
     c1->Update();
-
-
-    *fText_viewer << Form("change log scale") <<  endl;
-    fText_viewer->ShowBottom();
 }
 
 
@@ -3911,8 +3444,7 @@ void ROOTSCOPE::To_writeoutFile() {
 
 void ROOTSCOPE::To_readinFile( ){
 
-    /* No matter we are from which constructors, at least we will have a 1D histo,
-       in this function, we will append the new 1d and 2d histo from a root file. */
+    /* we append the 1d histo, but overwrite the 2d histo */
 
     Bool_t IsChange = Remove_default_empty_histo();
 
@@ -3930,35 +3462,27 @@ void ROOTSCOPE::To_readinFile( ){
     *fText_viewer << Form("read in %s", inFileName.Data() )<< endl;
 
     ReadIn_and_parse* tmpManager
-        = new ReadIn_and_parse( &histos, &histo2ds, inFileName  );
-        // we append the 1d/2d histos from file into our vectors.
+    = new ReadIn_and_parse( &histos, inFileName  );
+    // we will update histos here.
+    To_backup_histos();
 
 
-    if( tmpManager->IS_hasNewTH1() ) {
-        To_backup_histos();
-        *fText_viewer <<
-        Form("add  %d 1d histogram", tmpManager->Get_loadedTH1number() )<< endl;
-        fText_viewer->ShowBottom();
-
-    }
-
-    if( tmpManager->Get_hasTH2() && fHasTH2==0 ) {
-        // previously we don't have 2d histo, but now we have.
-        // and so we need to assign one of them to histo2d.
-        histo2d = histo2ds.at(0);
-        histo2d_backup = (TH2*) histo2d->Clone();
-        To_backup_histo2ds();
-        fHasTH2 = 1;
-        *fText_viewer
-        <<Form("add  %d 2d histogram", tmpManager->Get_loadedTH2number() )<< endl;
-        fText_viewer->ShowBottom();
-    }
+    *fText_viewer <<
+    Form("add  %d 1d histogram", tmpManager->Get_loadedTH1number() )<< endl;
 
 
+    fHasTH2 = tmpManager->Get_hasTH2();
+
+
+    if( fHasTH2 ) {
+        histo2d = tmpManager->Get_TH2();
+        *fText_viewer << "Load a 2d histogram"  <<  endl;
+        fText_viewer->ShowBottom(); }
 
     if( IsChange ) {
         // when we have no 1d nor 2d histo initially,
         // after loading, we show the first 1d
+        // (2d by To_display_histo2d() will have bugs....
         histo = histos[0];
         fOpen_list.clear();
         fOpen_list.push_back( 0 );
@@ -3989,8 +3513,6 @@ void ROOTSCOPE::To_change_linewidth(){
         }
 
     To_display_histos(0);
-    *fText_viewer << Form("change the line width") <<  endl;
-    fText_viewer->ShowBottom();
 }
 
 
@@ -4022,9 +3544,6 @@ void ROOTSCOPE::To_change_fillstyle() {
 
     To_display_histos(0);
 
-    // give user message.
-    *fText_viewer << "change fill style"  <<  endl;
-    fText_viewer->ShowBottom();
 }
 
 
@@ -4038,29 +3557,8 @@ void ROOTSCOPE::To_change_style_2d( ){
     if( fH2_style %optionN == 0 ) { fH2_style =0; }
     histo2d->Draw( styleDraw[fH2_style]  );
     c1->Update();
-    *fText_viewer << Form("change style") <<  endl;
-    fText_viewer->ShowBottom();
 }
 
-void ROOTSCOPE::To_change_marker_color(){
-
-    /* to circle marker size */
-
-    int optionN = sizeof( styleMarkercolor )/ sizeof( styleMarkercolor[0] );
-
-    fH2_marker_color ++ ;
-    if( fH2_marker_color %optionN == 0 ) { fH2_marker_color =0; }
-
-    histo2d->SetMarkerColor( styleMarkercolor[fH2_marker_color] );
-    histo2d_backup->SetMarkerColor( styleMarkercolor[fH2_marker_color] );
-    fH2_style = 0;
-    histo2d->Draw();
-    c1->Update();
-
-    // give user message.
-    *fText_viewer << "change marker color"  <<  endl;
-    fText_viewer->ShowBottom();
-}
 
 void ROOTSCOPE::To_change_marker_size(){
 
@@ -4076,10 +3574,6 @@ void ROOTSCOPE::To_change_marker_size(){
     fH2_style = 0;
     histo2d->Draw();
     c1->Update();
-
-    // give user message.
-    *fText_viewer << "change marker size"  <<  endl;
-    fText_viewer->ShowBottom();
 }
 
 
@@ -4166,7 +3660,10 @@ void ROOTSCOPE::AddOneDHisto( TH1* h_input ) {
         fOpen_list.push_back( 0 ); // show the one we just add.
         Single_pad_setting(); // single pad
         To_display_histos( 1 );
+
     }
+
+
 
 }
 
@@ -4195,193 +3692,6 @@ void ROOTSCOPE::SetTwoDHisto( TH2* h2d_input) {
 
 }
 
-template <class T> void ROOTSCOPE::AddHisto( T* histo_input) {
-
-    // note: TH2 is inherited from TH1.
-    bool isTH1 = ( histo_input->IsA()->InheritsFrom( TH1::Class() ) );
-    bool isTH2 = ( histo_input->IsA()->InheritsFrom( TH2::Class() ) );
-
-
-    if( isTH1 && !isTH2 ) {
-
-	Bool_t IsChange = Remove_default_empty_histo();
-
-	histos.push_back( histo_input );
-	To_backup_histos();
-	histo = histos.at( histos.size()-1 );
-	fOpen_list.clear();
-	fOpen_list.push_back( histos.size()-1  ); // show the one we just add.
-	Single_pad_setting(); // single pad
-	To_display_histos( 1 );
-    }
-    if( isTH1 && isTH2 ) {
-
-	histo2ds.push_back( (TH2*) histo_input );
-	To_backup_histo2ds();
-
-	histo2d = histo2ds.at( histo2ds.size() - 1 );
-	fOpen2d_list.clear();
-	fOpen2d_list.push_back( histo2ds.size() - 1 );
-	To_display_histo2ds( 0 );
-    }
-}
-
-
-
-void ROOTSCOPE::To_response_menu( Int_t menu_id ){
-
-    switch( menu_id ) {
-
-        case 0:
-            To_readinFile();
-            break;
-        case 1:
-            To_writeoutFile();
-            break;
-    }
-
-    if( !fIsTH2_inPad ) {
-	switch( menu_id ) {
-
-        case 100: To_show_histo_operation_dlg(); break;
-        case 102: Expand(); break;
-        case 103: Expand_dlg();  break;
-        case 104: Unexpand(); break;
-        case 105: Set_Y_Range(); break;
-        case 106: Rebin_compress(); break;
-        case 107: Rebin_uncompress(); break;
-        case 108: To_Change_histo_x_range(); break;
-        case 109: To_overlap_histos(); break;
-        case 110: Fit_Gaussian(); break;
-        case 111: Fit_Double_Gaussian(); break;
-        case 112: Fit_Background(); break;
-        case 113: Fit_Background_pol1(); break;
-        case 114: Set_Background(); break;
-        case 115: Get_Sum(0); break;
-        case 116: Clear_Marker(); break;
-        case 117: To_find_peaks(); break;
-        case 118: To_show_find_peaks_dlg(); break;
-        case 119: Set_histo_title(); break;
-        case 120: To_change_fillstyle(); break;
-        case 121: To_change_linewidth(); break;
-        case 122: To_set_logscale(); break;
-	} }
-
-    if( fIsTH2_inPad ) {
-	switch( menu_id ) {
-        case 200: To_show_histo2d_operation_dlg(); break;
-        case 202: Projection_2d( 1 ); break;
-        case 203: Projection_2d( 0 ); break;
-
-        case 204: Expand_2d(); break;
-        case 205: Unexpand_2d(); break;
-        case 206: Rebin_2d(1, 1); break;
-        case 207: Rebin_2d(1, 0); break;
-        case 208: Rebin_2d(0, 1); break;
-        case 209: Rebin_2d(0, 0); break;
-
-        case 210: Get_Sum(1); break;
-        case 211: Set_Z_Range(1); break;
-        case 212: Set_Z_Range(0); break;
-        case 213: To_change_style_2d(); break;
-        case 214: To_change_marker_size(); break;
-        case 215: To_set_logscale(); break;
-        case 216: To_change_marker_color(); break;
-	} }
-
-    // universal
-    switch( menu_id ) {
-	case 20:
-	    Show_version();
-	    break;
-        case 101:
-            Show_command_1d();
-            break;
-
-        case 201:
-            Show_command_2d();
-            break;
-    }
-
-}
-
-
-void ROOTSCOPE::Show_version() {
-
- TString info =
-   " version = 2.0.0 ";
- *fText_viewer << Form("%s", info.Data() )  <<  endl;
- fText_viewer->ShowBottom();
-}
-void ROOTSCOPE::Show_command_1d() {
-
- TString info =
-"    99 = 1        let histo99 = histo1\n \
-   99 = 1+2      let histo99 = histo1+histo2 \n \
-   99 = 1.5 * 2  let histo99 = 1.5 * histo2 \n \
-   99 += *       let histo99 = sum over all histos \n \
-   del 1 3 5     del histo 1, 3, and 5 \n \
-   del 1..5      del histo 1 to 5 \
-   ";
- *fText_viewer << Form("%s", info.Data() )  <<  endl;
- fText_viewer->ShowBottom();
-}
-
-
-void ROOTSCOPE::Show_command_2d() {
-
- TString info =
-"    99 = 1        let histo99 = histo1\n \
-   99 = 1+2      let histo99 = histo1+histo2 \n \
-   99 = 1.5 * 2  let histo99 = 1.5 * histo2 \n \
-   99 += *       let histo99 = sum over all histos \n \
-   del 1 3 5     del histo 1, 3, and 5 \n \
-   del 1..5      del histo 1 to 5 \n \
-   cut 2         make a cut on histo2 and write out to file\n \
-   overlap 1 2   to overlap histo1+histo2 \
-   ";
- *fText_viewer << Form("%s", info.Data() )  <<  endl;
- fText_viewer->ShowBottom();
-}
-
-
-void ROOTSCOPE::Add_note(Event_t* e) {
-
-    // first get x,y
-    // get text
-    // attact text to histo.
-
-    TVirtualPad* currentPad = c1->GetClickSelectedPad();
-    int        px = e->fX;
-    float     xx  = currentPad->AbsPixeltoX(px);
-    int     binx  = histo2d->GetXaxis()-> FindBin(xx);
-    float   x_pos = histo2d->GetXaxis()-> GetBinCenter( binx );
-
-    int        py = e->fY;
-    float   y_pos  = currentPad->AbsPixeltoY(py);
-
-    TString textNote = ""; 
-    new Dlg_add_note( gClient->GetRoot(), this, 10, 10, &textNote );
-
-    if( textNote.Length() > 0  ) {
-	
-	histo->GetListOfFunctions()
-	    ->Add( new TText( x_pos, y_pos, textNote.Data() ) );
-
-        *fText_viewer << Form("add a note" )<< endl;
-        fText_viewer->ShowBottom();
-        To_display_histos( 0 );
-    }
-}
-
-void ROOTSCOPE::welcome_info( ){
-    TString welcome_info = "Welcome to ROOTSCOPE.\n\
-Type in ROOTSCOPE_TIP() at the root prompt for more information";
-    *fText_viewer
-    << Form("%s", welcome_info.Data() )  <<  endl;
-    fText_viewer->ShowBottom();
-
-}
 
 
 
@@ -4413,7 +3723,6 @@ ROOTSCOPE::ROOTSCOPE( const TGWindow * p,  TH1* histo_input )
     fOpen_list.push_back( 0 );
     To_display_histos( 1 );
 
-    welcome_info();
 
 }
 
@@ -4432,8 +3741,8 @@ ROOTSCOPE::ROOTSCOPE( const TGWindow * p, TH2* histo2d_input )
 
     histo2d = histo2d_input;
     histo2d_backup = (TH2*) histo2d_input->Clone(); // backup, will be used when rebin
-    To_backup_histo2ds();
-    fHasTH2 = true;
+
+
 
     //---- Initial Setting -------//
     // to create two spectra from projection all x and y axis.
@@ -4448,7 +3757,6 @@ ROOTSCOPE::ROOTSCOPE( const TGWindow * p, TH2* histo2d_input )
     fOpen_list.push_back( 1 );
     To_display_histos( 1 );
 
-    welcome_info();
 }
 
 
@@ -4492,18 +3800,14 @@ ROOTSCOPE::ROOTSCOPE( const TGWindow * p  )
     <<  endl;
 
     fText_viewer->ShowBottom();
-    welcome_info();
+
 }
-
-
-
 
 // constructor for receiving a root file
 
 ROOTSCOPE::ROOTSCOPE( const TGWindow * p, const char* rootFileName  )
 : TGMainFrame( p, 500, 400 )
 {
-
     SetCleanup(kDeepCleanup); // important step for closing windows properly.
 
     Initialization();
@@ -4527,42 +3831,15 @@ ROOTSCOPE::ROOTSCOPE( const TGWindow * p, const char* rootFileName  )
         Create_Widgets( 500, 400 );
 
         ReadIn_and_parse* tmpManager
-            = new ReadIn_and_parse( &histos, &histo2ds, inFileName  );
-            // update histos and histo2ds here.
+        = new ReadIn_and_parse( &histos, inFileName  ); // update histos here.
 
 
 
         fHasTH2 = tmpManager->Get_hasTH2();
 
-
-
-        if( histo2ds.size() > 0 && histos.size() > 0 ) {
-
-            // when we have both TH1 and TH2 histogram
-            // we will only display the first TH1.
-            // and link the histo2d to the first TH2 ( not shown )
-
-            histo2d = histo2ds.at(0);
-            // histo2d_backup = (TH2*) histo2d->Clone(); // Oct14, seeming we dont' need it.
-            To_backup_histo2ds();
-
-            histo = histos.at(0);
-            fOpen_list.clear();
-            fOpen_list.push_back( 0 );
-            Single_pad_setting(); // single pad
-            To_display_histos( 1 );
-
-        }
-
-        else if( histo2ds.size() > 0 && histos.size() ==0 ) {
-
-            // when we have at least one TH2, and no TH1
-            // we will create automatic projection X and Y from the first TH2.
-            // and we diplay these two projections.
-
-            histo2d = histo2ds.at(0);
-            histo2d_backup = (TH2*) histo2d->Clone();
-            To_backup_histo2ds();
+        if( fHasTH2 ) {
+            // have TH2
+            histo2d = tmpManager->Get_TH2();
 
             // insert the total projections to histos
             histos.insert( histos.begin(),
@@ -4571,15 +3848,14 @@ ROOTSCOPE::ROOTSCOPE( const TGWindow * p, const char* rootFileName  )
                 histo2d->ProjectionX( Form( "%s%f", "X_PROJ_ALL", gRandom->Uniform() ) ) );
             histos.at(0)->SetTitle("FullYgate_ProjX_atuo");
             histos.at(1)->SetTitle("FullXgate_ProjY_auto");
-
+            histo2d_backup = (TH2*) histo2d->Clone();
             fOpen_list.push_back( 0 );
             fOpen_list.push_back( 1 );
             To_display_histos( 1 );
-        }
-        else if ( histo2ds.size() == 0 && histos.size() > 0  ) {
-
+            }
+        else if ( histos.size() > 0 && !fHasTH2 ) {
             // no TH2, but we have TH1s
-            // we display the first 1d hitogram.
+            // to display the first hitogram.
             histo = histos[0];
             fOpen_list.clear();
             fOpen_list.push_back( 0 );
@@ -4617,18 +3893,18 @@ ROOTSCOPE::ROOTSCOPE( const TGWindow * p, const char* rootFileName  )
 
         To_backup_histos();
 
+
     }
 
-    welcome_info();
+
 }
 
 
 
 
-void myROOTSCOPE() {
-    // printf( "~Test~\n");
-
-
+void myROOTSCOPE()
+{
+    printf( "~Test~\n");
 
     // prepare some histograms
     TH2F* htwoD = new TH2F("htwoD","htwoD",100,-3,3,100,-3, 3 );
@@ -4643,10 +3919,7 @@ void myROOTSCOPE() {
 
 
 
-
-    ////////////////////////////////////////////////////////////
     // demo: constructor usage
-
     // load 2d histo
     // we will automatically get full projections on X and Y.
     if( 0 ) {
@@ -4666,7 +3939,7 @@ void myROOTSCOPE() {
 
     // initially we don't load anything
     // and then we add 1d/2d histograms into it.
-    if( 0 ) {
+    if( 1 ) {
 
         ROOTSCOPE* app3
         = new ROOTSCOPE( gClient->GetRoot() );
@@ -4679,40 +3952,14 @@ void myROOTSCOPE() {
     }
 
     // initially 1d/2d histogram(s) from a rootfile.
-    if( 1 ) {
+    if( 0 ) {
 
         ROOTSCOPE* app4
-        = new ROOTSCOPE( gClient->GetRoot(), "./just_test.root");
-
+        //= new ROOTSCOPE( gClient->GetRoot(), "just_for_test.root" );
+        = new ROOTSCOPE( gClient->GetRoot(), "/home/xination/Dropbox/3_my_program/demo_root/demo_histo/A_demo_sqr.root" );
     }
 
+
+
 }
 
-
-
-void ROOTSCOPE_TIP() {
-    cout << "  \
- most common features: \n\
- d = to display or apply action to 1D histogram, \n\
- ex. 1 2 3   ==> to display histogram no. 1, 2, and 3.\n\
- ex. 1 = 2+3 ==> to add histo2 and histo3, then assign to histo1.\n\
- ex. 5 = 2   ==> to copy histo2 to histo5.\n\
- ex. 9 = 0.5 * 2   ==> to multiple 0.5 to each bin of histo2.\n\
- \n\
- A = to display or apply action to 2D histogram, \n\
- ex. 1     ==> to display 2D histogram1.\n\
- ex. overlap 1 2 ==> to overlap 2d histogram 1 and 2. \n\
- \n\
- to measure the area, centroid, FWHM for a peak at 1D\n\
- mouse click at the two bins for the range of interest, \n\
- hit 'g' key to get Gaussian fit.\n\
- hit 'b' key to set a constant background.\n\
- hit 'n' key to clean the fitted lines.\n\
- \n\
- for more instruction, please see the ROOTSCOPE's user manual\n\
-"
-	<< endl;
-}
-
-
-void start_rootscope() { new ROOTSCOPE( gClient->GetRoot() ); }

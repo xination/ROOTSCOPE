@@ -14,16 +14,13 @@
 
 class ReadIn_and_parse {
 
-// to do: need to clean up the comment.
 private:
 
     vector<TH1*>*   fHistos;
-    vector<TH2*>*   fHisto2ds;
-    TH2*            fHisto2d;   // todo: to kill this one.
+    TH2*            fHisto2d;
     Bool_t          HasTH2;
     TFile*          fInFile;
     Int_t           fCntHistos;
-    Int_t           fCntHisto2ds;
 
     TH1C*   h1c;
     TH1S*   h1s;
@@ -45,14 +42,12 @@ public:
 
 
     // constructor
-    ReadIn_and_parse( vector<TH1*>*  histos, vector<TH2*>*  histo2ds,  TString filename) {
+    ReadIn_and_parse( vector<TH1*>*  histos,  TString filename) {
 
 
-        fCntHistos   = 0;
-        fCntHisto2ds = 0;
+        fCntHistos = 0;
 
-        fHistos   = histos;
-        fHisto2ds = histo2ds;
+        fHistos = histos;
 
         fInFile =  new TFile( filename.Data()  );
 
@@ -79,8 +74,8 @@ public:
                 if ( s1 != "" ) {
                     HasTH2 = true;
                     histoName = objKey->GetName();
-                    Search_for_TH2( classType, histoName );
-                    fCntHisto2ds++; }
+                    Search_for_TH2( classType, histoName ); }
+
 
 
                 // search for  TH1C, TH1S, TH1F ..
@@ -90,22 +85,14 @@ public:
                     histoName = objKey->GetName();
                     Search_for_TH1( classType, histoName  );
                     fCntHistos ++; }
-
             }
-
         }
     }
 
 
     Int_t   Get_loadedTH1number () { return fCntHistos; }
 
-    Int_t   Get_loadedTH2number () { return fCntHisto2ds; }
-
-    Bool_t  IS_hasNewTH1() { return (fCntHistos>0)? 1:0; }
-
-    Bool_t  IS_hasNewTH2() { return (fCntHisto2ds>0)? 1:0; }
-
-    Bool_t  Get_hasTH2() { return (fHisto2ds->size()>0)? 1:0; }
+    Bool_t  Get_hasTH2() { return HasTH2; }
 
     TH2*    Get_TH2() { return fHisto2d; }
 
@@ -118,57 +105,62 @@ public:
 
         if( type == "TH2C" ) {
             h2c = (TH2C*) fInFile->Get( name.Data() ) ;
-            fHisto2ds->push_back(  (TH2*) h2c );
+            fHisto2d =(TH2*) h2c;
         }
 
         else if( type == "TH2S" ) {
             h2s = (TH2S*) fInFile->Get( name.Data() ) ;
-            fHisto2ds->push_back(  (TH2*) h2s );
+            fHisto2d = (TH2*) h2s->Clone();
         }
 
         else if( type == "TH2I" ) {
             h2i = (TH2I*) fInFile->Get( name.Data() ) ;
-            fHisto2ds->push_back(  (TH2*) h2i );
+            fHisto2d = (TH2*) h2i;
         }
 
         else if( type == "TH2F" ) {
+
             h2f = (TH2F*) fInFile->Get( name.Data() ) ;
-            fHisto2ds->push_back(  (TH2*) h2f );
+            fHisto2d =(TH2*) h2f;
         }
 
         else if( type == "TH2D" ) {
             h2d = (TH2D*) fInFile->Get( name.Data() ) ;
-            fHisto2ds->push_back(  (TH2*) h2d );
+            fHisto2d = (TH2*) h2d;
         }
 
     }
 
-    // According to the type of the 1d histogram,
+     // According to the type of the 1d histogram,
     // we retrieve it and append it to fHistos
     void Search_for_TH1( TString type, TString name) {
 
         if( type == "TH1C" ) {
-            //h1c = nullptr; // Tai: it seems we don't need it.
+            h1c = nullptr;
             h1c = (TH1C*) fInFile->Get( name.Data() ) ;
             fHistos->push_back( (TH1*) h1c  );
         }
 
         if( type == "TH1S" ) {
+            h1s = nullptr;
             h1s = (TH1S*) fInFile->Get( name.Data() ) ;
             fHistos->push_back( (TH1*) h1s  );
         }
 
         if( type == "TH1I" ) {
+            h1i = nullptr;
             h1i = (TH1I*) fInFile->Get( name.Data() ) ;
             fHistos->push_back( (TH1*) h1i  );
         }
 
         if( type == "TH1F" ) {
+            h1f = nullptr;
             h1f = (TH1F*) fInFile->Get( name.Data() ) ;
             fHistos->push_back( (TH1*) h1f  );
         }
 
          if( type == "TH1D" ) {
+            h1d = nullptr;
             // or fInFile->GetObject( name.Data() , h1d );
             h1d = (TH1D*) fInFile->Get( name.Data() ) ;
             fHistos->push_back( (TH1*) h1d );
