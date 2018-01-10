@@ -1586,7 +1586,7 @@ void ROOTSCOPE::Fit_Gaussian() {
 
 
         *fText_viewer <<
-            Form( "\nCenter = %5.3f, Area/cmp = %5.2f, FWHM = %5.2f, Chisqr/N = %5.2f (cmp=%d)",
+            Form( "\nCenter = %5.3f, Area/cmp = %5.2f, FWHM = %7.4f, Chisqr/N = %5.2f (cmp=%d)",
             fitted_c, area/fCmp, FWHM, chisqr, fCmp ) <<  endl;
         fText_viewer->ShowBottom();
 
