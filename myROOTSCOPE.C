@@ -4372,7 +4372,6 @@ void ROOTSCOPE::Add_note(Event_t* e) {
         fText_viewer->ShowBottom();
         To_display_histos( 0 );
     }
-    cout << "TEST  breaking point 3" << endl;
 }
 
 void ROOTSCOPE::welcome_info( ){
