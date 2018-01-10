@@ -4354,8 +4354,8 @@ void ROOTSCOPE::Add_note(Event_t* e) {
     TVirtualPad* currentPad = c1->GetClickSelectedPad();
     int        px = e->fX;
     float     xx  = currentPad->AbsPixeltoX(px);
-    int     binx  = histo2d->GetXaxis()-> FindBin(xx);
-    float   x_pos = histo2d->GetXaxis()-> GetBinCenter( binx );
+    int     binx  = histo->GetXaxis()-> FindBin(xx);
+    float   x_pos = histo->GetXaxis()-> GetBinCenter( binx );
 
     int        py = e->fY;
     float   y_pos  = currentPad->AbsPixeltoY(py);
@@ -4372,6 +4372,7 @@ void ROOTSCOPE::Add_note(Event_t* e) {
         fText_viewer->ShowBottom();
         To_display_histos( 0 );
     }
+    cout << "TEST  breaking point 3" << endl;
 }
 
 void ROOTSCOPE::welcome_info( ){
