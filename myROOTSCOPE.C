@@ -3900,8 +3900,15 @@ void ROOTSCOPE::To_writeoutFile() {
         TFile outFile( outFileName.Data(), "RECREATE" );
         if( outFile.IsOpen() )
         {
-            if( fHasTH2 ) { histo2d->Write();  }
-            for( Int_t i = 0; i< histos.size(); i++ ) { histos[i]->Write(); }
+            for( Int_t i = 0; i< histo2ds.size();i++){ histo2ds[i]->Write(); }
+
+            for( Int_t i = 0; i< histos.size(); i++ ) {
+
+                if(  strcmp( histos[i]->GetName(), "hempty123xyz" ) !=0 ) {
+                    histos[i]->Write();
+                }
+
+            }
             *fText_viewer << Form("write out to %s", outFileName.Data() )<< endl;
             fText_viewer->ShowBottom();
         }
@@ -4525,6 +4532,7 @@ ROOTSCOPE::ROOTSCOPE( const TGWindow * p, const char* rootFileName  )
     fTesting.Close();
 
 
+
     if( isOK ) {
 
         Create_Widgets( 500, 400 );
@@ -4534,9 +4542,7 @@ ROOTSCOPE::ROOTSCOPE( const TGWindow * p, const char* rootFileName  )
             // update histos and histo2ds here.
 
 
-
         fHasTH2 = tmpManager->Get_hasTH2();
-
 
 
         if( histo2ds.size() > 0 && histos.size() > 0 ) {
@@ -4546,7 +4552,6 @@ ROOTSCOPE::ROOTSCOPE( const TGWindow * p, const char* rootFileName  )
             // and link the histo2d to the first TH2 ( not shown )
 
             histo2d = histo2ds.at(0);
-            // histo2d_backup = (TH2*) histo2d->Clone(); // Oct14, seeming we dont' need it.
             To_backup_histo2ds();
 
             histo = histos.at(0);
@@ -4554,6 +4559,7 @@ ROOTSCOPE::ROOTSCOPE( const TGWindow * p, const char* rootFileName  )
             fOpen_list.push_back( 0 );
             Single_pad_setting(); // single pad
             To_display_histos( 1 );
+
 
         }
 

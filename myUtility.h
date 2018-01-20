@@ -19,7 +19,7 @@ private:
 
     vector<TH1*>*   fHistos;
     vector<TH2*>*   fHisto2ds;
-    TH2*            fHisto2d;   // todo: to kill this one.
+
     Bool_t          HasTH2;
     TFile*          fInFile;
     Int_t           fCntHistos;
@@ -107,7 +107,7 @@ public:
 
     Bool_t  Get_hasTH2() { return (fHisto2ds->size()>0)? 1:0; }
 
-    TH2*    Get_TH2() { return fHisto2d; }
+
 
 
 
