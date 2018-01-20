@@ -1,7 +1,7 @@
 //
 //   Author : Pei-Luan Tai
 //   Contact: pt10f@my.fsu.edu
-//   Last update: Dec 13, 2017
+//   Last update: Jan 20, 2018
 //***************************************/
 #include "myDialog.h"
 #include "myDialog_2D.h"
@@ -449,7 +449,7 @@ void ROOTSCOPE::To_response(Event_t* e) {
 
             else if( e->fCode == key_arrow_right )  { Go_half_right( ); }
 
-	    else if( key_symbol ==  kKey_4 )    { Go_half_left(); }
+            else if( key_symbol ==  kKey_4 )    { Go_half_left(); }
 
             else if( key_symbol ==  kKey_6 )    { Go_half_right(); }
 
@@ -1375,10 +1375,11 @@ void ROOTSCOPE::Get_Sum( bool isTH2 ) {
         int binx1 = histo->GetXaxis()-> FindBin(xMin);
         int binx2 = histo->GetXaxis()-> FindBin(xMax);
 
-        float   area = 0;
+        float   area   = 0;
         int     counts = 0;
         float dX   =histo->GetXaxis()->GetBinWidth(1);
-        for( Int_t i =binx1; i<=binx2; i++ ){
+
+        for( Int_t i =binx1; i<binx2; i++ ){
              float height = histo-> GetBinContent( i );
              area += ( height * dX );
 
@@ -1418,19 +1419,22 @@ void ROOTSCOPE::Get_Sum( bool isTH2 ) {
         int biny1 = histo->GetYaxis()-> FindBin(yMin);
         int biny2 = histo->GetYaxis()-> FindBin(yMax);
 
+
         if( (xMax != xMin) || (yMax != yMin) )
         {
 
             Int_t counts = 0;
 
-            for( Int_t i =binx1; i<=binx2; i++ ){
-            for( Int_t j =biny1; j<=biny2; j++ ){
+            for( Int_t i =binx1; i<binx2; i++ ){
+            for( Int_t j =biny1; j<biny2; j++ ){
 
                  counts +=  histo2d-> GetBinContent( i, j );
             }}
 
-
-            *fText_viewer << Form("Counts = %d in the selected region.", counts )  <<  endl;
+            *fText_viewer
+            << Form("\nsum over region x [ %.1f to %.1f], y [ %.1f to %.1f ]\n",
+            xMin, xMax, yMax, yMin );
+            *fText_viewer<<Form("Counts = %d in the selected region.\n", counts );
             fText_viewer->ShowBottom();
         }
 
@@ -3695,7 +3699,6 @@ void ROOTSCOPE::Unexpand_2d( ){
         fH2_pickX[1] = histo2d->GetXaxis()->GetXmax();
         fH2_pickY[0] = histo2d->GetYaxis()->GetXmin();
         fH2_pickY[1] = histo2d->GetYaxis()->GetXmax();
-        // do I need these? we have the same function at Clear_Marker2d()
 
 }
 
@@ -4360,11 +4363,11 @@ void ROOTSCOPE::Add_note(Event_t* e) {
     int        py = e->fY;
     float   y_pos  = currentPad->AbsPixeltoY(py);
 
-    TString textNote = ""; 
+    TString textNote = "";
     new Dlg_add_note( gClient->GetRoot(), this, 10, 10, &textNote );
 
     if( textNote.Length() > 0  ) {
-	
+
 	histo->GetListOfFunctions()
 	    ->Add( new TText( x_pos, y_pos, textNote.Data() ) );
 
