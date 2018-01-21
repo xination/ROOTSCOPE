@@ -67,9 +67,12 @@ public:
 
     void    Cancel();
 
-    void    Parse_expression( );
-
     void    Update_entry_output(char*);
+
+
+private:
+
+    void    Parse_expression( );
 
     bool    Special_case( TString epr );
 
@@ -81,9 +84,10 @@ public:
 
     void    to_display_a_TH2( TString epr );
 
-    void    to_make_TCutG( TString epr);
-
     void    to_overlap_two_TH2( TString epr);
+
+    void    to_use_TCutG(  TString epr);
+
 
 };
 
@@ -123,7 +127,7 @@ void Dlg_Operation_histo2ds::Parse_expression( ){
 
     // define the variables for process
     Bool_t  go_special_case = false; //  99 = 1 (just one equal sign)
-    Bool_t  go_general_case = false; //  99 = 3 * 2 ( one equal and operator sign) 
+    Bool_t  go_general_case = false; //  99 = 3 * 2 ( one equal and operator sign)
 
     Bool_t  hasSingleEqualSign  = false;
     Bool_t  hasEqualSign  = false;
@@ -162,8 +166,12 @@ void Dlg_Operation_histo2ds::Parse_expression( ){
 
 
     if( epr.IsDigit() ) { to_display_a_TH2(epr); }
-    
-    else if( epr.Contains("cut") ) { to_make_TCutG(epr); }
+
+    else if( epr.Contains("sum") ) { to_use_TCutG(epr); }
+
+    else if( epr.Contains("crop") ) { to_use_TCutG(epr); }
+
+    else if( epr.Contains("exclude") ) { to_use_TCutG(epr); }
 
     else if( epr.Contains("overlap") ) { to_overlap_two_TH2(epr); }
 
@@ -217,7 +225,7 @@ void Dlg_Operation_histo2ds::Update_entry_output( char* entry_output ) {
 
 
 void Dlg_Operation_histo2ds::del_spectra( TString epr ){
-    
+
     // del 1..3  means to delete h1, h2, and h3 ( continuous range )
     // del 1 5 7 means to delete h1, h5, and h7
 
@@ -340,7 +348,7 @@ void Dlg_Operation_histo2ds::combo_case( TString epr ) {
 
     // this block is to deal with "99 += 1..32" and " 99 += * "
     // we have checked "+=" sign, before go in to this method.
-    
+
     Int_t    idxEqual= epr.Index("=");
     Int_t    idxPlus = epr.Index("+");
     Int_t    idxAsterisk = epr.Index("*");
@@ -407,8 +415,8 @@ void Dlg_Operation_histo2ds::combo_case( TString epr ) {
         Double_t ylow = fHisto2ds->at(0)-> GetYaxis()-> GetXmin();
         Double_t yup  = fHisto2ds->at(0)-> GetYaxis()-> GetXmax();
         TString tempTitle = Form("tempHisto%f", gRandom->Uniform() );
-        tempHisto = new TH2F( tempTitle.Data(), "tempHisto", 
-                                    nbinsx, xlow, xup, 
+        tempHisto = new TH2F( tempTitle.Data(), "tempHisto",
+                                    nbinsx, xlow, xup,
                                     nbinsy, ylow, yup );
 
 
@@ -460,7 +468,7 @@ void Dlg_Operation_histo2ds::combo_case( TString epr ) {
         Double_t yup  = fHisto2ds->at(0)-> GetYaxis()-> GetXmax();
         TString tempTitle = Form("tempHisto%f", gRandom->Uniform() );
         tempHisto = new TH2F( tempTitle.Data(), "tempHisto",
-                                    nbinsx, xlow, xup, 
+                                    nbinsx, xlow, xup,
                                     nbinsy, ylow, yup );
 
 
@@ -516,8 +524,8 @@ void Dlg_Operation_histo2ds::to_display_a_TH2( TString epr) {
     // we will add the valid histo idx to the fHisto2d_operated ( TString )
     for( Int_t i = 0; i < substringN; i++ ) {
         TString s_tmp = ( (TObjString*)tmp_array->At(i) )->GetString();
-        int histo_idx = s_tmp.Atoi() - 1;  
- 	
+        int histo_idx = s_tmp.Atoi() - 1;
+
 	// validate ( to avoid out the index range )
 	if( histo_idx >= 0 && histo_idx<fHisto2ds->size() ) {
 	    *fHisto2d_operated += Form( "%d ", histo_idx );
@@ -533,7 +541,7 @@ void Dlg_Operation_histo2ds::to_overlap_two_TH2( TString epr) {
 
     TObjArray* tmp_array = epr.Tokenize(" ");
     if( tmp_array->GetEntries() >= 3 ) {
-        // 
+        //
         // to deal with input as "overlap 1 2"
         //
         *fHisto2d_operated = ( (TObjString*)tmp_array->At(1) )->GetString();
@@ -546,36 +554,35 @@ void Dlg_Operation_histo2ds::to_overlap_two_TH2( TString epr) {
     }
 }
 
-void Dlg_Operation_histo2ds::to_make_TCutG( TString epr) { 
 
-    *fMessage = "to cut TH2: ";
 
-    TObjArray* tmp_array = epr.Tokenize(" ");
+void Dlg_Operation_histo2ds::to_use_TCutG( TString epr ) {
+
+     *fMessage = "use_TCutG ";
+
+    // to deal with different keywords
+    if( epr.Contains("sum")     ) {  *fMessage +=  "sum"; }
+    if( epr.Contains("crop")    ) {  *fMessage +=  "crop"; }
+    if( epr.Contains("exclude") ) {  *fMessage +=  "exclude"; }
+
+    // to parse the input, and assign the fHisto2d_operated
+    // ex. "keyword 2" then "2" will be assigned to fHisto2d_operated
+    // if no TH2 obj number, ex "keyword", then
+    // we will make a TCutG atthe current TH2 object, and do operations.
+    TObjArray* tmp_array = epr.Tokenize(" "); // separate by space
+
     if( tmp_array->GetEntries() >= 2 ) {
-        // 
-        // to deal with input as "cut 2"
-        // it will diplay spectrum no.2 and then make a TCutG
-        //
+
         *fHisto2d_operated = ( (TObjString*)tmp_array->At(1) )->GetString();
-
-
-        if( fHisto2d_operated->IsDigit() ) {
-            *fMessage += *fHisto2d_operated;
-        } else {
-            *fHisto2d_operated = "1"; 
-        }
     }
     else if( tmp_array->GetEntries() == 1 ) {
 
-        //
-        // to deal with input as "cut" without TH2 object number.
-        // it will make a TCutG at the current TH2 object.
-        //
         *fHisto2d_operated = "-99";
-
     }
 
+
 }
+
 
 bool Dlg_Operation_histo2ds::Special_case( TString epr ){
 
@@ -622,7 +629,7 @@ bool Dlg_Operation_histo2ds::Special_case( TString epr ){
         {
             fHisto2ds->push_back( (TH2*) fHisto2ds->at(hAIdx)->Clone() );
             *fHisto2d_operated = Form( "%d", static_cast<int>(fHisto2ds->size()-1) ) ;
-            *fMessage = Form( "\nCreate a new spectrum at %d\n", 
+            *fMessage = Form( "\nCreate a new spectrum at %d\n",
                                 static_cast<int>(fHisto2ds->size())  );
         }
         else
@@ -649,8 +656,8 @@ void Dlg_Operation_histo2ds::General_case( TString epr ){
     //      0 1 2 3 4
     // ex.  2 = 2 + 1 ( histo[1] = histo[1] + histo[0]
     // ex  99 = 3 * 2 ( last one = 3 * histo[1] )
-    
-    
+
+
     // STEP1: Get operands
     Int_t hOutIdx =  0;
     Int_t hAIdx   =  0;
@@ -671,7 +678,7 @@ void Dlg_Operation_histo2ds::General_case( TString epr ){
     if ( idxPlus  != -1 )  hasPlusSign  = true;
     if ( idxMinus != -1 )  hasMinusSign = true;
     if ( idxTimes != -1 )  hasTimesSign = true;
-    
+
      tmp = epr(0,idxEqual); // slice it from index=0 to index=idxEqual
     hOutIdx = tmp.Atoi();
     hOutIdx--; // since in the panel, we label histo[0] as spec no.1
@@ -708,7 +715,7 @@ void Dlg_Operation_histo2ds::General_case( TString epr ){
     }
 
     bool createNewHisto = false;
-    bool IsValidEpr = true; 
+    bool IsValidEpr = true;
     // check hAIdx and hBIdx is within the range of histo2ds.
     if( hAIdx > fHisto2ds->size() ||  hAIdx < 0 ) IsValidEpr = false;
     if( hBIdx > fHisto2ds->size() ||  hBIdx < 0 ) IsValidEpr = false;
@@ -725,8 +732,8 @@ void Dlg_Operation_histo2ds::General_case( TString epr ){
         Int_t nbinsy  = fHisto2ds->at( hBIdx)-> GetYaxis()-> GetNbins();
         Double_t ylow = fHisto2ds->at( hBIdx)-> GetYaxis()-> GetXmin();
         Double_t yup  = fHisto2ds->at( hBIdx)-> GetYaxis()-> GetXmax();
-        TH2* tempHisto = new TH2F( "tempHisto", "tempHisto", 
-                                    nbinsx, xlow, xup, 
+        TH2* tempHisto = new TH2F( "tempHisto", "tempHisto",
+                                    nbinsx, xlow, xup,
                                     nbinsy, ylow, yup );
 
 
@@ -735,7 +742,7 @@ void Dlg_Operation_histo2ds::General_case( TString epr ){
             // hout = hA + hB
             Is_operation_ok
             = tempHisto->Add( fHisto2ds->at(hAIdx)  ,  fHisto2ds->at(hBIdx) );
-	    
+
 	    if( Is_operation_ok )
             {
                 tempHisto -> SetTitle( Form("spec%02d + spec%02d", hAIdx+1, hBIdx+1 ));
@@ -772,7 +779,7 @@ void Dlg_Operation_histo2ds::General_case( TString epr ){
 
 
         if( hOutIdx > 0 && hOutIdx >= fHisto2ds->size() ) createNewHisto = true;
-	
+
 
         if( Is_operation_ok )
         {
@@ -780,7 +787,7 @@ void Dlg_Operation_histo2ds::General_case( TString epr ){
             {
                 fHisto2ds->push_back( tempHisto );
                 *fHisto2d_operated = Form( "%d", static_cast<int>(fHisto2ds->size()-1) ) ;
-                *fMessage = Form( "\nCreate a new spectrum at %d\n", 
+                *fMessage = Form( "\nCreate a new spectrum at %d\n",
                              static_cast<int>(fHisto2ds->size())  );
             }
             else

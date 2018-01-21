@@ -610,7 +610,7 @@ void ROOTSCOPE::To_response(Event_t* e) {
         }
 
 
-    } //--------------------------------- end of key reponses for TH2 obj
+    } //--------------------------------- end of key response for TH2 obj
 
 
 
@@ -3155,12 +3155,12 @@ void ROOTSCOPE::To_show_histo2d_operation_dlg() {
     if( output_message.Contains("to show TH2:")  ){
         fOpen2d_list.clear();
 
-	TObjArray* tmp_array = histo2d_operated.Tokenize(" ");
+        TObjArray* tmp_array = histo2d_operated.Tokenize(" ");
     	Int_t substringN = tmp_array->GetEntries();
 
     	for( Int_t i = 0; i < substringN; i++ ) {
     	    TString s_tmp = ( (TObjString*)tmp_array->At(i) )->GetString();
-	    fOpen2d_list.push_back( s_tmp.Atoi() );
+            fOpen2d_list.push_back( s_tmp.Atoi() );
     	}
         To_backup_histo2ds();
         To_display_histo2ds( 0 );
@@ -3168,14 +3168,16 @@ void ROOTSCOPE::To_show_histo2d_operation_dlg() {
 
 
 
-    // make a TCutG
-    // command as "cut 2" or "cut"
-    if( output_message.Contains("to cut TH2:")   ){
+    // to use TCutG
+    // command as "sum 2" or "sum"
+    if( output_message.Contains("use_TCutG")   ){
 
-       instruction = "start making a cut.\nmouse click to make the point.\ndouble right click to end.\n";
-	*fText_viewer << Form( "%s",instruction.Data() )  <<  endl;
-	fText_viewer->ShowBottom();
+        instruction
+        ="Use mouse left click to make the contour.\nDouble right click to end.\n";
+        *fText_viewer << Form( "%s",instruction.Data() )  <<  endl;
+        fText_viewer->ShowBottom();
 
+        // to deal with which TH2 obj to work with
         if( histo2d_operated.Atoi() > 0 ) {
             // when we specify which TH2 to cut, ie. "cut 2"
             fOpen2d_list.clear();
@@ -3192,31 +3194,105 @@ void ROOTSCOPE::To_show_histo2d_operation_dlg() {
                 fOpen2d_list.push_back( 0 );
             }
         }
-
         To_display_histo2ds( 0 );
 
+        // start making region cut.
         TCutG* mycut = (TCutG*)gPad->WaitPrimitive("CUTG","CutG");
         mycut->SetLineColor( kRed );
         mycut->Draw("same");
         mycut->SetName( Form( "a_new_cut%f", gRandom->Uniform() ) );
 
-	// we also write out the cut information to file
-	fstream fOut;
-	fOut.open("./temp_cut.dat", ios::out);
-	TString outStr="";
 
-	int totalPoints = mycut->GetN();
-	for( int i=0; i<totalPoints; i++) {
-	    double temp_x, temp_y;
-	    mycut->GetPoint( i, temp_x, temp_y );
-	    outStr += Form( "%d\t%20.10f\t%20.10f\n",i, temp_x, temp_y);
-	}
-	fOut <<  outStr.Data() ;
-	fOut.close();
-	instruction = "cut is set, we also write points info to temp_cut.dat";
-	*fText_viewer << Form( "%s",instruction.Data() )  <<  endl;
-	fText_viewer->ShowBottom();
+        // keyword sum: output the counts
+        if( output_message.Contains("sum") ){
+            int cnt_inside = mycut->IntegralHist( histo2ds[ fOpen2d_list[0] ] );
+            *fText_viewer << Form("We have %d counts.", cnt_inside )  <<  endl;
+            fText_viewer->ShowBottom();
+        }
+
+        // keyword crop: to keep data in the TCutG
+        // keyword exclude: exclude the data in the TCutG
+        if( output_message.Contains("crop") ||  output_message.Contains("exclude")  )
+        {
+            float xMax = Get_Max_range( fH2_pickX[0], fH2_pickX[1] );
+            float xMin = Get_Min_range( fH2_pickX[0], fH2_pickX[1] );
+            int binx1 = histo2d->GetXaxis()-> FindBin(xMin);
+            int binx2 = histo2d->GetXaxis()-> FindBin(xMax);
+            float yMax = Get_Max_range( fH2_pickY[0], fH2_pickY[1] );
+            float yMin = Get_Min_range( fH2_pickY[0], fH2_pickY[1] );
+            int biny1 = histo2d->GetYaxis()-> FindBin(yMin);
+            int biny2 = histo2d->GetYaxis()-> FindBin(yMax);
+
+            // to avoid user hasn't set markers.
+            if( xMax==0 && xMin==0 && yMax==0 && yMin == 0 ) {
+                 binx1 = 1;
+                 binx2 = histo2d->GetXaxis()->GetNbins();
+                 biny1 = 1;
+                 biny2 = histo2d->GetYaxis()->GetNbins();
+            }
+
+
+            // loop over all the whole or zoom-in histo2d.
+            for( Int_t i =binx1; i<binx2; i++ ){
+            for( Int_t j =biny1; j<biny2; j++ ){
+
+                float xValue = histo2d->GetXaxis()->GetBinCenter( i );
+                float yValue = histo2d->GetYaxis()->GetBinCenter( j );
+                float countN = histo2d->GetBinContent( i, j );
+
+                // for crop
+                if( output_message.Contains("crop") ) {
+
+                    if ( mycut->IsInside(xValue,yValue) )
+                    {
+                        histo2d-> SetBinContent( i, j, countN ) ;
+                    } else{
+                        histo2d-> SetBinContent( i, j, 0 );
+                    }
+                }
+
+                // for exclude
+                if( output_message.Contains("exclude") ) {
+
+                    if ( mycut->IsInside(xValue,yValue) )
+                    {
+                        histo2d-> SetBinContent( i, j, 0 );
+                    } else{
+                        histo2d-> SetBinContent( i, j, countN ) ;
+                    }
+                }
+
+
+            }}
+
+            To_backup_histo2ds();
+            c1->Update();
+        } // end of crop || exclude
+
+
+
+        // legacy code:
+        // we also write out the cut information to file
+        // fstream fOut;
+        // fOut.open("./temp_cut.dat", ios::out);
+        // TString outStr="";
+
+        // int totalPoints = mycut->GetN();
+        // for( int i=0; i<totalPoints; i++) {
+        //     double temp_x, temp_y;
+        //     mycut->GetPoint( i, temp_x, temp_y );
+        //     outStr += Form( "%d\t%20.10f\t%20.10f\n",i, temp_x, temp_y);
+        //  }
+        // fOut <<  outStr.Data() ;
+        // fOut.close();
+        // instruction = "cut is set, we also write points info to temp_cut.dat";
+        // *fText_viewer << Form( "%s",instruction.Data() )  <<  endl;
+        // fText_viewer->ShowBottom();
     }
+
+
+
+
 
     // to overlap two 2D histos
     // command as "overlap 1 2"
@@ -4358,7 +4434,9 @@ void ROOTSCOPE::Show_command_2d() {
    99 += *       let histo99 = sum over all histos \n \
    del 1 3 5     del histo 1, 3, and 5 \n \
    del 1..5      del histo 1 to 5 \n \
-   cut 2         make a cut on histo2 and write out to file\n \
+   sum [2]       get the sum over a region at histo2 \n \
+   crop [2]      to keep the data and in a given region while exclude all the rest. \n \
+   exclude [2]   to exclude data in a given region at histo2. \n \
    overlap 1 2   to overlap histo1+histo2 \
    ";
  *fText_viewer << Form("%s", info.Data() )  <<  endl;
