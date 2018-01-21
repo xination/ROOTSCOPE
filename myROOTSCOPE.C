@@ -279,6 +279,7 @@ private:
 
     //----------------------------------------- utility
 
+
     void  Get_active_histo1D();
 
     float Get_Max_range ( float, float);
@@ -310,8 +311,6 @@ private:
     void Create_Widgets( UInt_t w, UInt_t h  );
 
     bool Remove_default_empty_histo();
-
-    Dlg_Set_Background* fdlg_test;
 
     void welcome_info();
 
@@ -977,6 +976,8 @@ TH1* ROOTSCOPE::Get_histo_by_padnum( int padnum) {
     return hresult;
 
 }
+
+
 
 
 void ROOTSCOPE::Get_active_histo1D() {
@@ -3360,11 +3361,13 @@ void ROOTSCOPE::To_show_AddSub_gate_dlg( ) {
         //
         //  To append the new histo to histos
         //
+        int histo2d_num = fOpen2d_list.at(0)+1;
         TH1*    pHisto;
         TString pHisto_title;
         pHisto = gateManager->get_histogram();
-        pHisto_title = Form("gate_X_%.1f_%.1f_bg=%.1f_%.1f",
-                        addGate1, addGate2, subGate1, subGate2 );
+        pHisto_title = Form("[%d] gate on %s _%.1f_%.1f_bg=%.1f_%.1f",
+                    histo2d_num, projDirection.Data(),
+                    addGate1, addGate2, subGate1, subGate2 );
         pHisto->SetName( pHisto_title.Data() );
         pHisto->SetTitle( pHisto_title.Data() );
         histos.push_back( pHisto );
@@ -3376,8 +3379,10 @@ void ROOTSCOPE::To_show_AddSub_gate_dlg( ) {
         To_display_histos(0);
 
          *fText_viewer <<
-        Form("create a histo from gating Y: %.1f - %.1f, bg: %.1f to %.1f, at spec %d\n",
-                addGate1, addGate2, subGate1, subGate2, static_cast<int>(histos.size()) ) ;
+        Form("create a histo from gating %s %.1f to %.1f, bg: \
+         %.1f to %.1f from TH2[%d],\nto spec %d\n",
+        projDirection.Data(), addGate1, addGate2, subGate1, subGate2,
+        histo2d_num, static_cast<int>(histos.size()) ) ;
         fText_viewer->ShowBottom();
 
 
@@ -3407,6 +3412,7 @@ void ROOTSCOPE::Project_from_1d( bool flagXY ){
         float yMin = Get_Min_range( fXrange_pick1, fXrange_pick2 );
         int biny1 = histo2d->GetYaxis()-> FindBin(yMin);
         int biny2 = histo2d->GetYaxis()-> FindBin(yMax);
+        int histo2d_num = fOpen2d_list.at(0)+1;
 
 
 
@@ -3416,8 +3422,8 @@ void ROOTSCOPE::Project_from_1d( bool flagXY ){
             if( fBG_const ==0 && fBG_linear == 0) {
 
                 // gating without any background.
-                pHisto_name  = Form("gate_X_%.1f_%.1f", xMin, xMax );
-                pHisto_title = Form("gate on X: %.1f - %.1f", xMin, xMax );
+                pHisto_name  = Form("[%d] gate_X_%.1f_%.1f", histo2d_num, xMin, xMax );
+                pHisto_title = Form("[%d] gate on X: %.1f to %.1f",histo2d_num, xMin, xMax);
                 pHisto = histo2d->ProjectionY( pHisto_name.Data(), binx1, binx2 );
                 pHisto->SetTitle( pHisto_title.Data() );
                 histos.push_back( pHisto );
@@ -3432,8 +3438,10 @@ void ROOTSCOPE::Project_from_1d( bool flagXY ){
                 = new Calculate_fraction_bg( histo2d, xMin, xMax, fBG_const, 1 );
 
                 pHisto = gateManager->get_histogram();
-                pHisto_name  = Form("gate_X_%.1f_%.1f(bg=%.1f)", xMin, xMax, fBG_const );
-                pHisto_title = Form("gate_X_%.1f_%.1f(bg=%.1f)", xMin, xMax, fBG_const );
+                pHisto_name  = Form("[%d] gate_X_%.1f_%.1f(bg=%.1f)",
+                                histo2d_num, xMin, xMax, fBG_const );
+                pHisto_title = Form("[%d] gate_X_%.1f to %.1f(bg=%.1f)",
+                                histo2d_num, xMin, xMax, fBG_const );
                 pHisto->SetTitle( pHisto_title.Data() );
                 histos.push_back( pHisto );
                 delete gateManager;
@@ -3442,7 +3450,7 @@ void ROOTSCOPE::Project_from_1d( bool flagXY ){
 
 
             *fText_viewer <<
-            Form("create a histo from gating X: %.1f - %.1f, at spec %d\n",
+            Form("create a histo from gating X: %.1f to %.1f, at spec %d\n",
                 xMin, xMax, static_cast<int>(histos.size()) );
             fText_viewer->ShowBottom();
         }
@@ -3453,8 +3461,8 @@ void ROOTSCOPE::Project_from_1d( bool flagXY ){
             if( fBG_const ==0 && fBG_linear == 0){
 
                 // gating without any background.
-                pHisto_name  = Form("gating_Y_%.1f_%.1f", yMin, yMax );
-                pHisto_title = Form("gate on Y: %.1f - %.1f", yMin, yMax );
+                pHisto_name  = Form("[%d] gating_Y_%.1f_%.1f",histo2d_num, yMin, yMax );
+                pHisto_title = Form("[%d] gate on Y: %.1f to %.1f",histo2d_num, yMin, yMax);
                 pHisto = histo2d->ProjectionX( pHisto_name.Data(), biny1, biny2 );
                 pHisto->SetTitle( pHisto_title.Data() );
                 histos.push_back( pHisto );
@@ -3467,8 +3475,10 @@ void ROOTSCOPE::Project_from_1d( bool flagXY ){
                 = new Calculate_fraction_bg( histo2d, xMin, xMax, fBG_const, 0 );
 
                 pHisto = gateManager->get_histogram();
-                pHisto_name  = Form("gate_Y_%.1f_%.1f(bg=%.1f)", xMin, xMax, fBG_const );
-                pHisto_title = Form("gate_Y_%.1f_%.1f(bg=%.1f)", xMin, xMax, fBG_const );
+                pHisto_name  = Form("[%d] gate_Y_%.1f_%.1f(bg=%.1f)",
+                                histo2d_num, xMin, xMax, fBG_const );
+                pHisto_title = Form("[%d] gate_Y_%.1f to %.1f(bg=%.1f)",
+                                histo2d_num, xMin, xMax, fBG_const );
                 pHisto->SetTitle( pHisto_title.Data() );
                 histos.push_back( pHisto );
                 delete gateManager;
@@ -3477,7 +3487,7 @@ void ROOTSCOPE::Project_from_1d( bool flagXY ){
 
 
             *fText_viewer <<
-            Form("create a histo from gating Y: %.1f - %.1f, at spec %d\n",
+            Form("create a histo from gating Y: %.1f toŮ %.1f, at spec %d\n",
                 yMin, yMax, static_cast<int>(histos.size()) ) ;
             fText_viewer->ShowBottom();
         }
@@ -3520,6 +3530,7 @@ void ROOTSCOPE::Projection_2d( bool flagXY ){
     int binx2 = histo2d->GetXaxis()-> FindBin(xMax);
     int biny1 = histo2d->GetYaxis()-> FindBin(yMin);
     int biny2 = histo2d->GetYaxis()-> FindBin(yMax);
+    int histo2d_num = fOpen2d_list.at(0)+1;
 
     TH1*    pHisto;
     TString pHisto_name;  // id for the projected histogram
@@ -3529,26 +3540,26 @@ void ROOTSCOPE::Projection_2d( bool flagXY ){
     if( flagXY == 1 ) // gating x axis
     {
 
-        pHisto_name  = Form("gate_X_%.1f_%.1f", xMin, xMax );
-        pHisto_title = Form("gate on X: %.1f - %.1f", xMin, xMax );
+        pHisto_name  = Form("[%d] gate_X_%.1f_%.1f", histo2d_num, xMin, xMax );
+        pHisto_title = Form("[%d] gate on X: %.1f to %.1f",histo2d_num, xMin, xMax );
         pHisto = histo2d->ProjectionY( pHisto_name.Data(), binx1, binx2 );
         pHisto->SetTitle( pHisto_title.Data() );
         histos.push_back( pHisto );
         *fText_viewer <<
-        Form("create a histo from gating X: %.1f - %.1f, at spec %d\n",
-            xMin, xMax, static_cast<int>(histos.size()) );
+        Form("create a histo from gating X: %.1f - %.1f from TH2 [%d], to spec %d\n",
+            xMin, xMax, histo2d_num, static_cast<int>(histos.size()) );
         fText_viewer->ShowBottom();
     }
 
     if( flagXY == 0 ) // gating y axis
     {
-        pHisto_name  = Form("gating_Y_%.1f_%.1f", yMin, yMax );
-        pHisto_title = Form("gate on Y: %.1f - %.1f", yMin, yMax );
+        pHisto_name  = Form("[%d] gating_Y_%.1f_%.1f",histo2d_num, yMin, yMax );
+        pHisto_title = Form("[%d] gate on Y: %.1f to %.1f",histo2d_num, yMin, yMax );
         pHisto = histo2d->ProjectionX( pHisto_name.Data(), biny1, biny2 );
         pHisto->SetTitle( pHisto_title.Data() );
         histos.push_back( pHisto );
-        Form("create a histo from gating Y: %.1f - %.1f, at spec %d\n",
-            yMin, yMax, static_cast<int>(histos.size()) );
+        Form("create a histo from gating Y: %.1f to %.1f from TH2 [%d], to spec %d\n",
+            yMin, yMax, histo2d_num, static_cast<int>(histos.size()) );
         fText_viewer->ShowBottom();
     }
 
@@ -4575,9 +4586,13 @@ ROOTSCOPE::ROOTSCOPE( const TGWindow * p, const char* rootFileName  )
 
             // insert the total projections to histos
             histos.insert( histos.begin(),
-                histo2d->ProjectionY( Form( "%s%f", "Y_PROJ_ALL", gRandom->Uniform() ) ) );
+                histo2d->ProjectionY( Form( "%s%f", "from[1] Y_PROJ_ALL",
+                                      gRandom->Uniform() ) ) );
+
             histos.insert( histos.begin(),
-                histo2d->ProjectionX( Form( "%s%f", "X_PROJ_ALL", gRandom->Uniform() ) ) );
+                histo2d->ProjectionX( Form( "%s%f", "from[1] X_PROJ_ALL",
+                                      gRandom->Uniform() ) ) );
+
             histos.at(0)->SetTitle("FullYgate_ProjX_atuo");
             histos.at(1)->SetTitle("FullXgate_ProjY_auto");
 
