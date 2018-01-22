@@ -1,7 +1,7 @@
 //
 //   Author : Pei-Luan Tai
 //   Contact: pt10f@my.fsu.edu
-//   Last update: Jan 20, 2018
+//   Last update: Jan 21, 2018
 //***************************************/
 #include "myDialog.h"
 #include "myDialog_2D.h"
@@ -3182,18 +3182,25 @@ void ROOTSCOPE::To_show_histo2d_operation_dlg() {
             // when we specify which TH2 to cut, ie. "cut 2"
             fOpen2d_list.clear();
             fOpen2d_list.push_back( histo2d_operated.Atoi()-1 );
-        } else {
+        }
+        else
+        {
             // when we don't specify which TH2 to cut,
             // then just use the current TH2
-            //
-            // if there is no current TH2, then
-            // we use the first TH2 .
-            //
-            if( fOpen2d_list.size() == 0 ) {
 
+            if( fOpen2d_list.size() == 0 ) {
+                // if there is no current TH2, then
+                // we use the first TH2.
                 fOpen2d_list.push_back( 0 );
+            } else {
+
+                int  current_TH2_num = fOpen2d_list[ fPadActive -1 ] ;
+                fOpen2d_list.clear();
+                fOpen2d_list.push_back( current_TH2_num );
             }
         }
+
+
         To_display_histo2ds( 0 );
 
         // start making region cut.
@@ -3205,7 +3212,7 @@ void ROOTSCOPE::To_show_histo2d_operation_dlg() {
 
         // keyword sum: output the counts
         if( output_message.Contains("sum") ){
-            int cnt_inside = mycut->IntegralHist( histo2ds[ fOpen2d_list[0] ] );
+            int cnt_inside = mycut->IntegralHist( histo2d );
             *fText_viewer << Form("We have %d counts.", cnt_inside )  <<  endl;
             fText_viewer->ShowBottom();
         }
