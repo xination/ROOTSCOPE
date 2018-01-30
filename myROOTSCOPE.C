@@ -362,7 +362,7 @@ public:
 
 
 
-const char* ROOTSCOPE::styleDraw[3] = {"",  "COL2", "COLZ2" };
+const char* ROOTSCOPE::styleDraw[3] = {"",  "COL1", "COLZ1" };
 
 const int   ROOTSCOPE::styleMarkersize[5] = { 1, 6 , 7,  20 };
 
