@@ -513,8 +513,8 @@ void ROOTSCOPE::To_response(Event_t* e) {
             // ctl + t
             if( key_symbol == kKey_t ) { Set_histo_title(); }
 
-            // ctl + c
-            if( key_symbol == kKey_c ) { To_delete_histo_inSelectedPad(); }
+            // ctl + shift + c
+            if( key_symbol == kKey_C ) { To_delete_histo_inSelectedPad(); }
 
             // ctl + d
             if( key_symbol == kKey_d ) { To_overlap_histos(); }
