@@ -510,14 +510,12 @@ void ROOTSCOPE::To_response(Event_t* e) {
         //_______ctrl + key
         if ( e->fType == kGKeyPress && isCtrl && !isAlt   ) {
 
-            // ctl + t
-            if( key_symbol == kKey_t ) { Set_histo_title(); }
 
             // ctl + shift + c
             if( key_symbol == kKey_C ) { To_delete_histo_inSelectedPad(); }
 
             // ctl + d
-            if( key_symbol == kKey_d ) { To_overlap_histos(); }
+            else if( key_symbol == kKey_d ) { To_overlap_histos(); }
 
             // ctl + w
             else if( key_symbol == kKey_w  ) { To_writeoutFile(); }
@@ -607,6 +605,7 @@ void ROOTSCOPE::To_response(Event_t* e) {
 
             // ctl + r
             else if( key_symbol == kKey_r  ) { To_readinFile(); }
+
         }
 
 
@@ -624,6 +623,15 @@ void ROOTSCOPE::To_response(Event_t* e) {
                  if( key_symbol == kKey_d  ) { To_show_histo_operation_dlg( ); }
             else if( key_symbol == kKey_A  ) { To_show_histo2d_operation_dlg( ); }
         }
+
+
+         //_______ctrl + key
+        if ( e->fType == kGKeyPress && isCtrl && !isAlt   ) {
+
+            // ctl + t
+            if( key_symbol == kKey_t ) { Set_histo_title(); }
+        }
+
     }
 
 }
@@ -2400,15 +2408,28 @@ void ROOTSCOPE::Set_histo_title() {
 
     /* only apply for the click-selected pad. */
 
+    TString h_title;
 
-    TString h_title = histo->GetTitle();
+    if( !fIsTH2_inPad ) { h_title = histo  ->GetTitle(); } // TH1 case
+    else {                h_title = histo2d->GetTitle(); } // TH2 case.
+
 
     // pop up a dialog for user to change histo title.
-    new Dlg_Set_hTitle( gClient->GetRoot(), this, 10, 10,
-                        &h_title );
+    new Dlg_Set_hTitle( gClient->GetRoot(), this, 10, 10, &h_title );
 
-    histo->SetTitle( h_title.Data() );
-    To_backup_histos(); // here we will backup all the atttributes.
+    if( !fIsTH2_inPad )
+    {
+        histo->SetTitle( h_title.Data() );
+        To_backup_histos();
+        // here we will backup all the atttributes.
+        // i.e. if we have truncated the histo before,
+        // one it is saved, and we wounld not be able get back to the pass.
+
+    } else
+    {
+        histo2d->SetTitle( h_title.Data() );
+        To_backup_histo2ds();
+    }
 
     c1->Update();
 
