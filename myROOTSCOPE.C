@@ -1260,6 +1260,8 @@ void ROOTSCOPE::Create_Widgets( UInt_t w, UInt_t h  ) {
 
         fMenu_Entries[2]->AddLabel( sText2 );
 
+        fMenu_Entries[2]->AddEntry( Form("%-20s\t%6s", "change title","ctrl+t"), 217 );
+
         fMenu_Entries[2]->AddEntry( Form("%-20s\t%6s", "change style","F1"), 213 );
 
         fMenu_Entries[2]->AddEntry( Form("%-20s\t%6s", "change marker size","F2"), 214 );
@@ -4413,6 +4415,7 @@ void ROOTSCOPE::To_response_menu( Int_t menu_id ){
         case 214: To_change_marker_size(); break;
         case 215: To_set_logscale(); break;
         case 216: To_change_marker_color(); break;
+        case 217: Set_histo_title(); break;
 	} }
 
     // universal
