@@ -1192,7 +1192,7 @@ void ROOTSCOPE::Create_Widgets( UInt_t w, UInt_t h  ) {
 
         fMenu_Entries[1]->AddLabel( sText2 );
 
-        fMenu_Entries[1]->AddEntry( Form("%-20s\t%6s", "change title","t"), 119 );
+        fMenu_Entries[1]->AddEntry( Form("%-20s\t%6s", "change title","ctrl+t"), 119 );
 
         fMenu_Entries[1]->AddEntry( Form("%-20s\t%6s", "change fill style","F1"), 120 );
 
@@ -1225,14 +1225,15 @@ void ROOTSCOPE::Create_Widgets( UInt_t w, UInt_t h  ) {
 
         fMenu_Entries[2]->AddEntry( Form("%-20s\t%6s", "Unexpand","o"),205);
 
+        fMenu_Entries[2]->AddEntry( Form("%-20s\t%6s", "rebin compress x","x"), 206 );
 
-        fMenu_Entries[1]->AddEntry( Form("%-20s\t%6s", "rebin compress x","x"), 206 );
+        fMenu_Entries[2]->AddEntry( Form("%-20s\t%6s", "rebin uncompress x","X"), 207 );
 
-        fMenu_Entries[1]->AddEntry( Form("%-20s\t%6s", "rebin uncompress x","X"), 207 );
+        fMenu_Entries[2]->AddEntry( Form("%-20s\t%6s", "rebin compress y","y"), 208 );
 
-        fMenu_Entries[1]->AddEntry( Form("%-20s\t%6s", "rebin compress y","y"), 208 );
+        fMenu_Entries[2]->AddEntry( Form("%-20s\t%6s", "rebin uncompress y","Y"), 209 );
 
-        fMenu_Entries[1]->AddEntry( Form("%-20s\t%6s", "rebin uncompress y","Y"), 209 );
+
 
 
         fMenu_Entries[2]->AddSeparator();
