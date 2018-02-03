@@ -165,3 +165,6 @@ Dlg_add_note::Dlg_add_note( const TGWindow* p,
     gClient->WaitFor(this);
 }
 
+
+
+

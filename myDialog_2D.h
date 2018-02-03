@@ -1003,5 +1003,361 @@ Dlg_Operation_histo2ds::Dlg_Operation_histo2ds(
 
 }
 
+
+
+
+/////////////////////////////////////////////////////////////////////////////////////
+
+
+// for Expand_2d_dlg()
+
+class Dlg_Set_XYRange: public TGMainFrame {
+
+private:
+    int     fFocus;
+    float   fPrimitive_xmin;
+    float   fPrimitive_ymin;
+    float   fPrimitive_xmax;
+    float   fPrimitive_ymax;
+
+    float*  fxUserMax;
+    float*  fxUserMin;
+    float*  fyUserMax;
+    float*  fyUserMin;
+
+
+
+    TString             fxEntry_out;
+    TString             fyEntry_out;
+    TGHorizontalFrame*  fxHF;
+    TGHorizontalFrame*  fyHF;
+    TGHorizontalFrame*  fHF_btns;
+    TGLabel*            fxLabel;
+    TGLabel*            fyLabel;
+
+    TGTextEntry*        fxTextEntries;
+    TGTextEntry*        fyTextEntries;
+
+
+    TGTextButton*       fBtn_close;
+    TGTextButton*       fBtn_cancel;
+
+
+
+public:
+
+    // class constructor
+    Dlg_Set_XYRange( const TGWindow* p,
+                UInt_t w,
+                UInt_t h,
+                float  primitive_xmin,
+                float  primitive_xmax,
+                float & user_xmin,
+                float & user_xmax,
+                float  primitive_ymin,
+                float  primitive_ymax,
+                float & user_ymin,
+                float & user_ymax  );
+
+    void    To_response_key( Event_t* );
+
+    void    To_focus_on_entry( Event_t* );
+
+    void    Cancel();
+
+    void    CloseWindow();
+
+    void    Change_focus();
+
+    void    Update_marker();
+
+    void    Update_entry_output_x( char* entry_output );
+
+    void    Update_entry_output_y( char* entry_output );
+
+private:
+
+    vector<const char*> ToParseString( TString  , const char*   );
+
+};
+
+
+
+
+void Dlg_Set_XYRange::Update_entry_output_x( char* entry_output ) {
+
+    fxEntry_out = entry_output;
+}
+
+
+void Dlg_Set_XYRange::Update_entry_output_y( char* entry_output ) {
+
+    fyEntry_out = entry_output;
+}
+
+
+// my function to parse a TString which is split by delim
+vector<const char*> Dlg_Set_XYRange::ToParseString
+( TString s_input , const char* delim  )
+{
+
+    TObjArray* objarray = s_input.Tokenize( delim );
+    Int_t substringN = objarray->GetEntries();
+    vector<const char*> substrings;
+
+
+
+    for( Int_t i = 0; i < substringN; i++ )
+    {
+        TString tmp =  ( (TObjString*)objarray->At(i) ) -> GetString();
+
+        substrings.push_back( Form( "%s", tmp.Data() )  );
+
+    }
+
+    return substrings;
+}
+
+
+
+void Dlg_Set_XYRange::Update_marker( ){
+
+        bool done_x = false;
+        bool done_y = false;
+
+        if( fxEntry_out != "" )
+        {
+
+            vector<const char*> ranges = ToParseString( fxEntry_out, " " );
+            if( ranges.size()>=2 ) {
+                TString s1 = ranges[0] ;
+                TString s2 = ranges[1] ;
+
+                *fxUserMax = TMath::Max(   s1.Atof(),   s2.Atof() );
+                *fxUserMin = TMath::Min(   s1.Atof(),   s2.Atof() );
+                if( *fxUserMax > fPrimitive_xmax ) {  *fxUserMax = fPrimitive_xmax;  }
+                if( *fxUserMin < fPrimitive_xmin ) {  *fxUserMin = fPrimitive_xmin;  }
+                done_x = true;
+            }
+
+        }
+
+
+        if( fyEntry_out != "" )
+        {
+
+            vector<const char*> ranges = ToParseString( fyEntry_out, " " );
+            if( ranges.size()>=2 ) {
+                TString s1 = ranges[0] ;
+                TString s2 = ranges[1] ;
+
+                *fyUserMax = TMath::Max(   s1.Atof(),   s2.Atof() );
+                *fyUserMin = TMath::Min(   s1.Atof(),   s2.Atof() );
+                if( *fyUserMax > fPrimitive_ymax ) {  *fyUserMax = fPrimitive_ymax;  }
+                if( *fyUserMin < fPrimitive_ymin ) {  *fyUserMin = fPrimitive_ymin;  }
+                done_y = true;
+
+            }
+
+        }
+
+        if( done_x && done_y ) { CloseWindow(); }
+
+}
+
+
+
+void Dlg_Set_XYRange::Cancel(){
+
+    *fxUserMax = 0;
+    *fxUserMin = 0;
+    *fyUserMax = 0;
+    *fyUserMin = 0;
+    CloseWindow();
+
+
+ }
+
+
+void Dlg_Set_XYRange::CloseWindow(){
+
+
+    fBtn_close->SetState(kButtonDisabled); // to avoid double click.
+    fBtn_cancel->SetState(kButtonDisabled);
+    DeleteWindow();
+
+
+ }
+
+
+void Dlg_Set_XYRange::Change_focus( ) {
+
+    fFocus += 1;
+    if( fFocus % 2 == 0 ) {
+        fyTextEntries->SetFocus();
+        fyTextEntries->SelectAll();
+    } else {
+        fxTextEntries->SetFocus();
+        fxTextEntries->SelectAll();
+    }
+}
+
+
+void Dlg_Set_XYRange::To_focus_on_entry( Event_t* e) {
+
+    fxTextEntries->SetFocus();
+    fxTextEntries->SelectAll();
+}
+
+
+
+void Dlg_Set_XYRange::To_response_key(Event_t* e) {
+
+    if ( e->fType == kGKeyPress   )
+    {
+        // using LookuString to get the key mapping.
+        UInt_t key_symbol;
+        char tmp[2];
+        gVirtualX->LookupString( e, tmp,sizeof(tmp), key_symbol );
+
+         const unsigned key_enter = 36;
+
+
+
+        if( key_symbol == kKey_Enter   ) {  Update_marker(); } // the enter key near num pad
+
+        else if ( e->fCode == key_enter ) {  Update_marker(); } // the enter key in regular position.
+
+        else if( key_symbol == kKey_Escape ) {  CloseWindow(); }
+
+        else if( key_symbol == kKey_Tab ) {  Change_focus(); }
+
+    }
+
+}
+
+
+
+
+// class constructor
+Dlg_Set_XYRange::Dlg_Set_XYRange( const TGWindow* p,
+                                UInt_t w,
+                                UInt_t h,
+                                float  primitive_xmin,
+                                float  primitive_xmax,
+                                float & user_xmin,
+                                float & user_xmax,
+                                float  primitive_ymin,
+                                float  primitive_ymax,
+                                float & user_ymin,
+                                float & user_ymax  )
+: TGMainFrame(p, w, h)
+{
+
+    fxUserMax = & user_xmax;
+    fxUserMin = & user_xmin;
+    fyUserMax = & user_ymax;
+    fyUserMin = & user_ymin;
+
+    fPrimitive_xmin = primitive_xmin;
+    fPrimitive_ymin = primitive_ymin;
+    fPrimitive_xmax = primitive_xmax;
+    fPrimitive_ymax = primitive_ymax;
+
+    // for user know the range
+    TString xlabel_text = Form( " [%.1f to %.1f] ", primitive_xmin, primitive_xmax );
+    TString ylabel_text = Form( " [%.1f to %.1f] ", primitive_ymin, primitive_ymax );
+
+
+    SetCleanup(kDeepCleanup); // important step for closing windows properly.
+
+    TGLayoutHints*  Layout1 = new TGLayoutHints( kLHintsCenterY, 2, 2, 2, 2);
+
+
+    //-------------------------------------------------------------------| Label-Entry pair
+
+    fxHF = new TGHorizontalFrame( this , 200, 30);
+    AddFrame( fxHF, Layout1 );
+
+    fxLabel = new TGLabel( fxHF, xlabel_text.Data() );  /* base, text */
+    fxTextEntries = new TGTextEntry(  fxHF, "", 1);   /* base, inital txt, ID */
+    fxHF->AddFrame( fxTextEntries, Layout1 );
+    fxHF->AddFrame( fxLabel, Layout1 );
+
+
+
+    fyHF = new TGHorizontalFrame( this , 200, 30);
+    AddFrame( fyHF, Layout1 );
+
+    fyLabel = new TGLabel( fyHF, ylabel_text.Data() );  /* base, text */
+    fyTextEntries = new TGTextEntry(  fyHF, "", 1);   /* base, inital txt, ID */
+    fyHF->AddFrame( fyTextEntries, Layout1 );
+    fyHF->AddFrame( fyLabel, Layout1 );
+
+
+
+    //------------------------------------------------------------------| Connect
+    fxTextEntries
+        -> Connect( "TextChanged(char*)",
+                    "Dlg_Set_XYRange", this, "Update_entry_output_x(char*)");
+
+    fxTextEntries
+        -> Connect( "ProcessedEvent(Event_t*)",
+                    "Dlg_Set_XYRange", this,
+                    "To_response_key(Event_t*)");
+
+    fyTextEntries
+        -> Connect( "TextChanged(char*)",
+                    "Dlg_Set_XYRange", this, "Update_entry_output_y(char*)");
+
+    fyTextEntries
+        -> Connect( "ProcessedEvent(Event_t*)",
+                    "Dlg_Set_XYRange", this,
+                    "To_response_key(Event_t*)");
+
+
+
+
+
+    TGLayoutHints*  Layout2 = new TGLayoutHints( kLHintsExpandX, 2, 2, 2, 2);
+    fHF_btns = new TGHorizontalFrame( this , 200, 30);
+
+    //-------------------------------------------------------------------| Btn for OK
+    fBtn_close = new TGTextButton( fHF_btns, "OK" );
+    fBtn_close -> Connect( "Clicked()", "Dlg_Set_XYRange", this, "Update_marker()"  );
+    fHF_btns->AddFrame( fBtn_close, Layout2);
+
+    //-------------------------------------------------------------------| Btn for cancel the change
+
+    fBtn_cancel = new TGTextButton( fHF_btns, "Cancel" );
+    fBtn_cancel -> Connect( "Clicked()", "Dlg_Set_XYRange", this, "Cancel()"  );
+    fHF_btns->AddFrame( fBtn_cancel, Layout2);
+
+
+    AddFrame( fHF_btns, Layout2);
+
+
+
+    //-----------------------------------------------------------to focus on entry
+    this->Connect(  "ProcessedEvent(Event_t*)", "Dlg_Set_XYRange", this,
+                    "To_focus_on_entry(Event_t*)" );
+
+
+
+    SetName("Dlg_Set_XY_Expand_Range");
+    SetWindowName("Set XY Expand Range");
+
+
+    MapSubwindows();
+    Resize( GetDefaultSize() );
+    MapWindow();
+
+    gClient->WaitFor(this);
+
+    fFocus = 1;
+}
+
+
+
 /////////////////////////////////////////////////////////////////////////////////////
 

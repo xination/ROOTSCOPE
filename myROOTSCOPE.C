@@ -8,6 +8,7 @@
 #include "myUtility.h"
 #include "dev.h"
 
+
 #include <RVersion.h>
 #include <TGaxis.h>
 #include <TStyle.h>
@@ -249,6 +250,8 @@ private:
     void Clear_Marker2d( );
 
     void Expand_2d();
+
+    void Expand_2d_dlg();
 
     void Unexpand_2d();
 
@@ -560,6 +563,8 @@ void ROOTSCOPE::To_response(Event_t* e) {
             else if( key_symbol == kKey_n  ) { Clear_Marker2d( ); }
 
             else if( key_symbol == kKey_e  ) { Expand_2d( ); }
+
+            else if( key_symbol == kKey_E  ) { Expand_2d_dlg( ); }
 
             else if( key_symbol == kKey_o  ) { Unexpand_2d( ); }
 
@@ -1230,6 +1235,8 @@ void ROOTSCOPE::Create_Widgets( UInt_t w, UInt_t h  ) {
 
 
         fMenu_Entries[2]->AddEntry( Form("%-20s\t%6s", "expend cursor region","e"),204);
+
+        fMenu_Entries[2]->AddEntry( Form("%-20s\t%6s", "expand region dlg","E"), 218 );
 
         fMenu_Entries[2]->AddEntry( Form("%-20s\t%6s", "Unexpand","o"),205);
 
@@ -3771,6 +3778,40 @@ void ROOTSCOPE::SetMarker_2d(Event_t* e){
 }
 
 
+
+void ROOTSCOPE::Expand_2d_dlg( ) {
+
+    // absolute limits.
+    float xlower_limit = histo2d->GetXaxis()->GetXmin();
+    float xupper_limit = histo2d->GetXaxis()->GetXmax();
+
+    float ylower_limit = histo2d->GetYaxis()->GetXmin();
+    float yupper_limit = histo2d->GetYaxis()->GetXmax();
+
+
+    // current ranges.
+    float xMin = Get_Min_range( fH2_pickX[0], fH2_pickX[1] );
+    float xMax = Get_Max_range( fH2_pickX[0], fH2_pickX[1] );
+
+
+    float yMax = Get_Max_range( fH2_pickY[0], fH2_pickY[1] );
+    float yMin = Get_Min_range( fH2_pickY[0], fH2_pickY[1] );
+
+
+    new Dlg_Set_XYRange( gClient->GetRoot(), 10, 10,
+                        xlower_limit, xupper_limit, xMin, xMax,
+                        ylower_limit, yupper_limit, yMin, yMax );
+
+    if( (xMax != xMin) || (yMax != yMin) )
+    {
+        histo2d->GetXaxis()->SetRangeUser( xMin, xMax);
+        histo2d->GetYaxis()->SetRangeUser( yMin, yMax);
+        histo2d->Draw( styleDraw[fH2_style]  );
+        c1->Update();
+    }
+
+}
+
 void ROOTSCOPE::Expand_2d( ) {
 
 
@@ -3791,10 +3832,9 @@ void ROOTSCOPE::Expand_2d( ) {
         histo2d->GetXaxis()->SetRangeUser( xMin, xMax);
         histo2d->GetYaxis()->SetRangeUser( yMin, yMax);
         histo2d->Draw( styleDraw[fH2_style]  );
+
+        c1->Update();
     }
-
-    c1->Update();
-
 
 }
 
@@ -4416,6 +4456,7 @@ void ROOTSCOPE::To_response_menu( Int_t menu_id ){
         case 215: To_set_logscale(); break;
         case 216: To_change_marker_color(); break;
         case 217: Set_histo_title(); break;
+        case 218: Expand_2d_dlg(); break;
 	} }
 
     // universal
