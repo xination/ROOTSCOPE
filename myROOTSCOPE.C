@@ -1007,13 +1007,11 @@ void ROOTSCOPE::Get_active_histo1D() {
     TList* myList = selectedPad->GetListOfPrimitives();
     int objN = myList->GetSize();
 
-
     fPadActive = selectedPad->GetNumber();  // the current pad number
 
-
-
     TH1* htemp;
-    TH2* h2temp; fIsTH2_inPad = false;
+    TH2* h2temp;
+    fIsTH2_inPad = false;
 
     //  to filter out the TH1 object, and assign to histo
     for(int i=0; i< objN; i++)
@@ -1023,6 +1021,8 @@ void ROOTSCOPE::Get_active_histo1D() {
         htemp = dynamic_cast<TH1*> ( element );
         if ( htemp == nullptr ) continue;
         histo = htemp; // grab the TH1 address to "histo"
+
+
     }
 
     //  to filter out the TH2 object
@@ -1031,9 +1031,12 @@ void ROOTSCOPE::Get_active_histo1D() {
         TObject* element = myList-> At( i );
 
         h2temp = dynamic_cast<TH2*> ( element );
+
         if ( h2temp == nullptr ) continue;
+
         fIsTH2_inPad = true;
-	histo2d = h2temp;
+
+        histo2d = h2temp;
     }
 
 
@@ -3739,7 +3742,13 @@ void ROOTSCOPE::Projection_2d( bool flagXY, bool toShow = true ){
     int binx2 = histo2d->GetXaxis()-> FindBin(xMax);
     int biny1 = histo2d->GetYaxis()-> FindBin(yMin);
     int biny2 = histo2d->GetYaxis()-> FindBin(yMax);
-    int histo2d_num = fOpen2d_list.at(0)+1;
+
+    // the get the histo2d number from the clicked pad.
+    int idx;
+    if( fPadTotalN == 1 ){ idx = 0; }
+    else if ( fPadTotalN > 1 ){ idx = fPadActive - 1; }
+    int histo2d_num = fOpen2d_list.at(idx)+1;
+
 
     TH1*    pHisto;
     TString pHisto_name;  // id for the projected histogram
@@ -3748,7 +3757,6 @@ void ROOTSCOPE::Projection_2d( bool flagXY, bool toShow = true ){
 
     if( flagXY == 1 ) // gating x axis
     {
-
         pHisto_name  = Form("[%d] gate_X_%.1f_%.1f", histo2d_num, xMin, xMax );
         pHisto_title = Form("[%d] gate on X: %.1f to %.1f",histo2d_num, xMin, xMax );
         pHisto = histo2d->ProjectionY( pHisto_name.Data(), binx1, binx2 );
