@@ -1433,12 +1433,13 @@ void ROOTSCOPE::Get_Sum( bool isTH2 ) {
         float xMin = Get_Min_range( fH2_pickX[0], fH2_pickX[1] );
         int binx1 = histo->GetXaxis()-> FindBin(xMin);
         int binx2 = histo->GetXaxis()-> FindBin(xMax);
+        int binxN = histo2d->GetXaxis()->GetNbins();
 
         float yMax = Get_Max_range( fH2_pickY[0], fH2_pickY[1] );
         float yMin = Get_Min_range( fH2_pickY[0], fH2_pickY[1] );
         int biny1 = histo->GetYaxis()-> FindBin(yMin);
         int biny2 = histo->GetYaxis()-> FindBin(yMax);
-
+        int binyN = histo2d->GetYaxis()->GetNbins();
 
         if( (xMax != xMin) || (yMax != yMin) )
         {
@@ -1452,8 +1453,8 @@ void ROOTSCOPE::Get_Sum( bool isTH2 ) {
             }}
 
             *fText_viewer
-            << Form("\nsum over region x [ %.1f to %.1f], y [ %.1f to %.1f ]\n",
-            xMin, xMax, yMax, yMin );
+            << Form("\nsum over region x [ %.1f to %.1f], y [ %.1f to %.1f ] -- x,y total binN = %d, %d\n",
+            xMin, xMax, yMax, yMin, binxN, binyN );
             *fText_viewer<<Form("Counts = %d in the selected region.\n", counts );
             fText_viewer->ShowBottom();
         }
