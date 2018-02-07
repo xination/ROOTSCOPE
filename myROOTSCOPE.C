@@ -2889,7 +2889,7 @@ void ROOTSCOPE::_doing_overloap( TH1* h1, TH1* h2,
 
 
     h2->Scale(scale);
-    h2->Draw("same");
+    h2->Draw("hist same");
 
     TVirtualPad* curPad = c1->GetPad(0);
     faxis
