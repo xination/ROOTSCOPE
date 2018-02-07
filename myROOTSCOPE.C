@@ -4581,6 +4581,7 @@ void ROOTSCOPE::Show_command_2d() {
    sum [2]       get the sum over a region at histo2 \n \
    crop [2]      to keep the data and in a given region while exclude all the rest. \n \
    exclude [2]   to exclude data in a given region at histo2. \n \
+   exchange axis [2]   to exchange x <==> y axis. \n \
    overlap 1 2   to overlap histo1+histo2 \
    ";
  *fText_viewer << Form("%s", info.Data() )  <<  endl;
