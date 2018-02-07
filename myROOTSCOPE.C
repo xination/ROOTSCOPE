@@ -243,7 +243,9 @@ private:
 
     //-------------------------------------- 2d histo
 
-    void Projection_2d( bool flagXY );
+    void To_full_xy_projection();
+
+    void Projection_2d( bool flagXY, bool toShow = true  );
 
     void SetMarker_2d( Event_t* );
 
@@ -552,8 +554,6 @@ void ROOTSCOPE::To_response(Event_t* e) {
         //_______key
         if ( e->fType == kGKeyPress && !isCtrl && !isAlt ) {
 
-
-
                  if( key_symbol == kKey_q  ) { To_Back_to_disply_histos(); }
 
             else if( key_symbol == kKey_p  ) { Projection_2d( 1 ); }
@@ -597,10 +597,8 @@ void ROOTSCOPE::To_response(Event_t* e) {
 
             else if( key_symbol ==  kKey_PageDown )  { To_switch_histo2d(0); }
 
-
-
-
         }
+
 
         //_______ctrl + key
         if ( e->fType == kGKeyPress && isCtrl && !isAlt   ) {
@@ -610,6 +608,9 @@ void ROOTSCOPE::To_response(Event_t* e) {
 
             // ctl + r
             else if( key_symbol == kKey_r  ) { To_readinFile(); }
+
+            // ctl + shift + p
+            else if( key_symbol == kKey_P  ) { To_full_xy_projection(); }
 
         }
 
@@ -1232,6 +1233,9 @@ void ROOTSCOPE::Create_Widgets( UInt_t w, UInt_t h  ) {
         fMenu_Entries[2]-> AddEntry( Form("%-20s\t%6s", "project to x","p"), 202 );
 
         fMenu_Entries[2]-> AddEntry( Form("%-20s\t%6s", "project to y","P"), 203 );
+
+        fMenu_Entries[2]->
+        AddEntry( Form("%-20s\t%6s", "whole project to xy","ctrl+P"), 219 );
 
 
 
@@ -3698,7 +3702,26 @@ void ROOTSCOPE::Project_from_1d( bool flagXY ){
 }
 
 
-void ROOTSCOPE::Projection_2d( bool flagXY ){
+
+void ROOTSCOPE::To_full_xy_projection( ){
+
+    fH2_pickX[0] = histo2d->GetXaxis()->GetXmin();
+    fH2_pickX[1] = histo2d->GetXaxis()->GetXmax();
+    fH2_pickY[0] = histo2d->GetYaxis()->GetXmin();
+    fH2_pickY[1] = histo2d->GetYaxis()->GetXmax();
+    bool toShow = false;
+    Projection_2d( 1, toShow ); // gating whole range of x axis
+    Projection_2d( 0, toShow ); // gating whole range of y axis
+
+    fOpen_list.clear();
+    fOpen_list.push_back( histos.size()-2 );
+    fOpen_list.push_back( histos.size()-1 );
+    To_display_histos( 0 );
+
+}
+
+
+void ROOTSCOPE::Projection_2d( bool flagXY, bool toShow = true ){
 
     /*
         To display the projection from a 2d matrix,
@@ -3744,6 +3767,7 @@ void ROOTSCOPE::Projection_2d( bool flagXY ){
         pHisto = histo2d->ProjectionX( pHisto_name.Data(), biny1, biny2 );
         pHisto->SetTitle( pHisto_title.Data() );
         histos.push_back( pHisto );
+        *fText_viewer <<
         Form("create a histo from gating Y: %.1f to %.1f from TH2 [%d], to spec %d\n",
             yMin, yMax, histo2d_num, static_cast<int>(histos.size()) );
         fText_viewer->ShowBottom();
@@ -3753,7 +3777,8 @@ void ROOTSCOPE::Projection_2d( bool flagXY ){
     To_backup_histos();
     fOpen_list.clear();
     fOpen_list.push_back( histos.size() - 1 );  // index for the last one
-    To_display_histos( 0 );
+
+    if(toShow) To_display_histos( 0 );
 
 
 
@@ -4529,6 +4554,7 @@ void ROOTSCOPE::To_response_menu( Int_t menu_id ){
         case 216: To_change_marker_color(); break;
         case 217: Set_histo_title(); break;
         case 218: Expand_2d_dlg(); break;
+        case 219: To_full_xy_projection(); break;
 	} }
 
     // universal
