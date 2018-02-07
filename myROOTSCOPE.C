@@ -1,7 +1,7 @@
 //
 //   Author : Pei-Luan Tai
 //   Contact: pt10f@my.fsu.edu
-//   Last update: Jan 21, 2018
+//   Last update: Feb 7 2018
 //***************************************/
 #include "myDialog.h"
 #include "myDialog_2D.h"
@@ -1058,6 +1058,7 @@ void ROOTSCOPE::Initialization() {
     fPrecisionFormat = " %.1f";
 
 
+    fSwitch_overlap = 1;
     fSwitch_overlap = 1;
     fOverlapMode = false;
     fCmp = 1;
@@ -2515,19 +2516,19 @@ void ROOTSCOPE::To_display_histo2ds( bool showMSG  ){
 
     if( fOpen2d_list.size() > 0 ) {
 
-	fPadTotalN = fOpen2d_list.size();
+        fPadTotalN = fOpen2d_list.size();
 
-	c1->Clear();
+        c1->Clear();
         c1->SetMargin( 0.05, 0.05, 0.1, 0.1);
         c1->Divide( fPadTotalN, 1, 0, 0 );  // xmarign=0, ymargin=0
 
         fPadActive = 1;
         fIsTH2_inPad = true;
-	fHasTH2 = true;
-	histo2d = histo2ds.at( fOpen2d_list.at(0) );
+        fHasTH2 = true;
+        histo2d = histo2ds.at( fOpen2d_list.at(0) );
         histo2d_backup = histo2ds_backup.at( fOpen2d_list.at(0) );
 
-	for( int i=0; i<fPadTotalN; i++ )
+        for( int i=0; i<fPadTotalN; i++ )
         {
 
             c1->cd( i+1 ); // pad idx starts from 1 ( not 0 )!!!
@@ -2540,8 +2541,8 @@ void ROOTSCOPE::To_display_histo2ds( bool showMSG  ){
     }
     else {
 
-          *fText_viewer << " we don't have TH2 to in the open list"  <<  endl;
-	  fText_viewer->ShowBottom();
+        *fText_viewer << " we don't have TH2 to in the open list"  <<  endl;
+        fText_viewer->ShowBottom();
     }
 
 }
@@ -3336,9 +3337,9 @@ void ROOTSCOPE::To_show_histo2d_operation_dlg() {
     // command as "overlap 1 2"
     if( output_message.Contains("to overlap TH2:")   ){
 
-	TObjArray* tmp_array = histo2d_operated.Tokenize(" ");
-	TString tmp_a = ( (TObjString*)tmp_array->At(0) )->GetString();
-	TString tmp_b = ( (TObjString*)tmp_array->At(1) )->GetString();
+        TObjArray* tmp_array = histo2d_operated.Tokenize(" ");
+        TString tmp_a = ( (TObjString*)tmp_array->At(0) )->GetString();
+        TString tmp_b = ( (TObjString*)tmp_array->At(1) )->GetString();
 
 
         c1->Clear();
@@ -3346,13 +3347,83 @@ void ROOTSCOPE::To_show_histo2d_operation_dlg() {
         c1->cd();
 
         histo2d = histo2ds.at( tmp_a.Atoi()-1 );
-        histo2d->Draw();
-	histo2ds.at( tmp_b.Atoi()-1 ) -> Draw( "same");
+
+        histo2d->Draw(); // the overlap range will follow this one.
+
+        histo2ds.at( tmp_b.Atoi()-1 ) -> Draw( "same");
         fPadActive = 0;     // single pad
         fPadTotalN = 1;
         c1->Update();
 
     }
+
+    // to exchange axis for a TH2 object.
+    // command as "exchange axis 2"
+    if( output_message.Contains("to exchange axis TH2:")   ){
+
+        if( histo2d_operated.Atoi() > 0 ) {
+            // when we specify which TH2
+            int hidx = histo2d_operated.Atoi()-1 ;
+            histo2d = histo2ds.at( hidx );
+        }
+        else {
+            // using the current histo2d.
+            // and so we don't need to do anything.
+        }
+
+
+
+
+        // create a TH2 with dimesions from x <===> y
+        // we also exchange the axis title.
+        int binxN = histo2d->GetXaxis()->GetNbins();
+        int binyN = histo2d->GetYaxis()->GetNbins();
+        double xmax = histo2d->GetXaxis()->GetXmax();
+        double xmin = histo2d->GetXaxis()->GetXmin();
+        double ymax = histo2d->GetYaxis()->GetXmax();
+        double ymin = histo2d->GetYaxis()->GetXmin();
+        TH2F* histo2dNew = new TH2F( "histo2dNew", "histo2dNew",
+                                    binyN, ymin, ymax,
+                                    binxN, xmin, xmax );
+        histo2dNew->SetTitle( histo2d->GetTitle() );
+        histo2dNew->SetName( Form("%s_%f", histo2d->GetTitle(), gRandom->Uniform()  ) );
+        histo2dNew->GetXaxis()->SetTitle( histo2d->GetYaxis()->GetTitle() );
+        histo2dNew->GetYaxis()->SetTitle( histo2d->GetXaxis()->GetTitle() );
+
+
+        for( int ix = 1; ix <= binxN; ix++ ) {
+        for( int iy = 1; iy <= binyN; iy++ ) {
+
+            histo2dNew->SetBinContent( ix, iy, histo2d->GetBinContent( iy, ix ) );
+        }}
+
+
+
+        // insert the new histo, and then erase the old one.
+        // at first, we have to get the index.
+        Int_t idx;
+        Int_t histo2dIdx;
+        if( histo2d_operated.Atoi() > 0 ) {
+            // when we specify which TH2
+            histo2dIdx = histo2d_operated.Atoi()-1;
+        }
+        else {
+            // to deal with the current pad
+            if( fPadTotalN == 1 ){ idx = 0; }
+            else if ( fPadTotalN > 1 ){ idx = fPadActive - 1; }
+            histo2dIdx = fOpen2d_list.at(idx);
+        }
+
+        histo2ds.insert( histo2ds.begin() + histo2dIdx, (TH2*) histo2dNew->Clone() );
+        histo2d = histo2ds.at( histo2dIdx );
+        histo2ds.erase( histo2ds.begin() + histo2dIdx + 1 );
+
+
+        To_backup_histo2ds();
+        To_display_histo2ds( 0 );
+        delete histo2dNew;
+    }
+
 }
 
 

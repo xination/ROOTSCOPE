@@ -1,8 +1,7 @@
-
 //
 //   Author : Pei-Luan Tai
 //   Contact: pt10f@my.fsu.edu
-//   Last update: Dec 3 2017
+//   Last update: Feb 7 2018
 //***************************************/
 #include <vector>
 #include <TH1.h>
@@ -88,6 +87,7 @@ private:
 
     void    to_use_TCutG(  TString epr);
 
+    void    to_exchange_axis(TString epr);
 
 };
 
@@ -166,6 +166,8 @@ void Dlg_Operation_histo2ds::Parse_expression( ){
 
 
     if( epr.IsDigit() ) { to_display_a_TH2(epr); }
+
+    else if( epr.Contains("exchange axis") ) { to_exchange_axis(epr); }
 
     else if( epr.Contains("sum") ) { to_use_TCutG(epr); }
 
@@ -554,6 +556,28 @@ void Dlg_Operation_histo2ds::to_overlap_two_TH2( TString epr) {
     }
 }
 
+void Dlg_Operation_histo2ds::to_exchange_axis( TString epr ) {
+
+    *fMessage = "to exchange axis TH2: ";
+
+    // to parse the input, and assign the fHisto2d_operated
+    // ex. "keyword 2" then "2" will be assigned to fHisto2d_operated
+    // if no TH2 obj number, ex "keyword", then
+    // we will exchange current TH2 object x <-->y
+
+    // the epr = "exchange axis 2" or  "exchange axis"
+    TObjArray* tmp_array = epr.Tokenize(" "); // separate by space
+
+    if( tmp_array->GetEntries() >= 3 ) {
+
+        *fHisto2d_operated = ( (TObjString*)tmp_array->At(2) )->GetString();
+    }
+    else if( tmp_array->GetEntries() == 2 ) {
+
+        *fHisto2d_operated = "-99";
+    }
+
+}
 
 
 void Dlg_Operation_histo2ds::to_use_TCutG( TString epr ) {
@@ -568,7 +592,7 @@ void Dlg_Operation_histo2ds::to_use_TCutG( TString epr ) {
     // to parse the input, and assign the fHisto2d_operated
     // ex. "keyword 2" then "2" will be assigned to fHisto2d_operated
     // if no TH2 obj number, ex "keyword", then
-    // we will make a TCutG atthe current TH2 object, and do operations.
+    // we will make a TCutG at the current TH2 object, and do operations.
     TObjArray* tmp_array = epr.Tokenize(" "); // separate by space
 
     if( tmp_array->GetEntries() >= 2 ) {
