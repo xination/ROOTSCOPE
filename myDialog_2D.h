@@ -888,9 +888,13 @@ Dlg_Operation_histo2ds::Dlg_Operation_histo2ds(
 
             if( i  < histo2ds->size() ) {
                 histo2d_title = fHisto2ds->at(i)->GetTitle();
-                if( histo2d_title.Length()>15 ) {
+
+                // to avoid long title
+                if( n0 >= 30 ) {
+                    if( histo2d_title.Length()>15 ) {
                     histo2d_title
-                    = "..." + histo2d_title( histo2d_title.Length()-12, 12 ); }
+                    = "..." + histo2d_title( histo2d_title.Length()-12, 12 ); }  }
+
                 outstr = Form( " [2D] %2d:  %s  ", i+1 , histo2d_title.Data() ) ;
             }
             else {

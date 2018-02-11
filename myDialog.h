@@ -2824,7 +2824,7 @@ public:
 
     void    del_spectra( TString epr );
 
-    void    to_display_histos( TString epr); 
+    void    to_display_histos( TString epr);
 };
 
 
@@ -3482,7 +3482,7 @@ void Dlg_Operation_histos::General_case( TString epr ){
 
 
 void Dlg_Operation_histos::to_display_histos( TString epr){
-    
+
     // when inputs are all digits, ex "1 3 5" or " 2 2 2"
 
     *fMessage = "open TH1 spectrum: ";
@@ -3494,10 +3494,10 @@ void Dlg_Operation_histos::to_display_histos( TString epr){
     for( Int_t i = 0; i < substringN; i++ ) {
         TString s_tmp = ( (TObjString*)tmp_array->At(i) )->GetString();
         int histo_idx = s_tmp.Atoi()-1;
-        
-        if ( histo_idx >=0 && histo_idx <= (fHistos->size()-1) ) { 
-        
-            *fMessage += s_tmp + " "; 
+
+        if ( histo_idx >=0 && histo_idx <= (fHistos->size()-1) ) {
+
+            *fMessage += s_tmp + " ";
         }
     }
 
@@ -3582,9 +3582,13 @@ Dlg_Operation_histos::Dlg_Operation_histos(
 
             if( i  <histos->size() ) {
                 histo_title = fHistos->at(i)->GetTitle();
-                if( histo_title.Length()>15 ) {
-                    histo_title
-                    = "..." + histo_title( histo_title.Length()-12, 12 ); }
+
+                // to avoid long title
+                if( n0 >= 30 ) {
+                    if( histo_title.Length()>15 ) {
+                        histo_title
+                        = "..." + histo_title( histo_title.Length()-12, 12 ); }}
+
                 outstr = Form( " %2d:  %s  ", i+1 , histo_title.Data() ) ;
             }
             else {
