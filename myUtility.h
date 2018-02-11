@@ -63,6 +63,8 @@ public:
             TList*  keyList = fInFile->GetListOfKeys();
             Int_t   objN    = keyList->GetSize();
             TString     histoName;
+            TString     classType;
+            short       cycle;
             TString     s1;
 
             HasTH2  = false;
@@ -72,23 +74,22 @@ public:
             {
 
                 TKey*   objKey    = (TKey*) keyList-> At(i);
-                TString classType =  objKey->GetClassName();
+                histoName =  objKey->GetName();
+                classType =  objKey->GetClassName();
+                cycle     =  objKey->GetCycle();
 
                 // search for  TH2C, TH2S, TH2F ...
                 s1 = classType.SubString( "TH2" );
                 if ( s1 != "" ) {
                     HasTH2 = true;
-                    histoName = objKey->GetName();
-                    Search_for_TH2( classType, histoName );
+                    Search_for_TH2( classType, histoName, cycle  );
                     fCntHisto2ds++; }
 
 
                 // search for  TH1C, TH1S, TH1F ..
                 s1 = classType.SubString( "TH1" );
                 if ( s1 != "" ) {
-
-                    histoName = objKey->GetName();
-                    Search_for_TH1( classType, histoName  );
+                    Search_for_TH1( classType, histoName, cycle  );
                     fCntHistos ++; }
 
             }
@@ -114,30 +115,38 @@ public:
 
     // According to the type of the 2d histogram,
     // we retrieve it and assign to fHisto2d.
-    void Search_for_TH2( TString type, TString name ) {
+    void Search_for_TH2( TString type, TString name, short cycle ) {
+
+        TString fullName = Form( "%s;%d", name.Data(), cycle );
 
         if( type == "TH2C" ) {
-            h2c = (TH2C*) fInFile->Get( name.Data() ) ;
+            h2c = (TH2C*) fInFile->Get( fullName.Data() ) ;
+            h2c->SetName( Form( "%s%f", name.Data(),gRandom->Uniform() ) );
             fHisto2ds->push_back(  (TH2*) h2c );
         }
 
         else if( type == "TH2S" ) {
-            h2s = (TH2S*) fInFile->Get( name.Data() ) ;
+            h2s = (TH2S*) fInFile->Get( fullName.Data() ) ;
+            h2s->SetName( Form( "%s%f", name.Data(),gRandom->Uniform() ) );
             fHisto2ds->push_back(  (TH2*) h2s );
         }
 
         else if( type == "TH2I" ) {
-            h2i = (TH2I*) fInFile->Get( name.Data() ) ;
+            h2i = (TH2I*) fInFile->Get( fullName.Data() ) ;
+            h2i->SetName( Form( "%s%f", name.Data(),gRandom->Uniform() ) );
             fHisto2ds->push_back(  (TH2*) h2i );
         }
 
         else if( type == "TH2F" ) {
-            h2f = (TH2F*) fInFile->Get( name.Data() ) ;
+            h2f = (TH2F*) fInFile->Get( fullName.Data() ) ;
+            h2f->SetName( Form( "%s%f", name.Data(),gRandom->Uniform() ) );
             fHisto2ds->push_back(  (TH2*) h2f );
+
         }
 
         else if( type == "TH2D" ) {
-            h2d = (TH2D*) fInFile->Get( name.Data() ) ;
+            h2d = (TH2D*) fInFile->Get( fullName.Data() ) ;
+            h2d->SetName( Form( "%s%f", name.Data(),gRandom->Uniform() ) );
             fHisto2ds->push_back(  (TH2*) h2d );
         }
 
@@ -145,32 +154,39 @@ public:
 
     // According to the type of the 1d histogram,
     // we retrieve it and append it to fHistos
-    void Search_for_TH1( TString type, TString name) {
+    void Search_for_TH1( TString type, TString name, short cycle ) {
+
+        TString fullName = Form( "%s;%d", name.Data(), cycle );
 
         if( type == "TH1C" ) {
-            //h1c = nullptr; // Tai: it seems we don't need it.
-            h1c = (TH1C*) fInFile->Get( name.Data() ) ;
+
+            h1c = (TH1C*) fInFile->Get( fullName.Data() ) ;
+            h1c->SetName( Form( "%s%f", name.Data(),gRandom->Uniform() ) );
             fHistos->push_back( (TH1*) h1c  );
         }
 
         if( type == "TH1S" ) {
-            h1s = (TH1S*) fInFile->Get( name.Data() ) ;
+            h1s = (TH1S*) fInFile->Get( fullName.Data() ) ;
+            h1s->SetName( Form( "%s%f", name.Data(),gRandom->Uniform() ) );
             fHistos->push_back( (TH1*) h1s  );
         }
 
         if( type == "TH1I" ) {
-            h1i = (TH1I*) fInFile->Get( name.Data() ) ;
+            h1i = (TH1I*) fInFile->Get( fullName.Data() ) ;
+            h1i->SetName( Form( "%s%f", name.Data(),gRandom->Uniform() ) );
             fHistos->push_back( (TH1*) h1i  );
         }
 
         if( type == "TH1F" ) {
-            h1f = (TH1F*) fInFile->Get( name.Data() ) ;
+            h1f = (TH1F*) fInFile->Get( fullName.Data() ) ;
+            h1f->SetName( Form( "%s%f", name.Data(),gRandom->Uniform() ) );
             fHistos->push_back( (TH1*) h1f  );
         }
 
          if( type == "TH1D" ) {
-            // or fInFile->GetObject( name.Data() , h1d );
-            h1d = (TH1D*) fInFile->Get( name.Data() ) ;
+            // or fInFile->GetObject( fullName.Data() , h1d );
+            h1d = (TH1D*) fInFile->Get( fullName.Data() ) ;
+            h1d->SetName( Form( "%s%f", name.Data(),gRandom->Uniform() ) );
             fHistos->push_back( (TH1*) h1d );
 
         }
