@@ -25,6 +25,7 @@ class Dlg_Operation_histo2ds: public TGMainFrame {
 
 private:
 
+    TH2*            fHisto2d;
     vector<TH2*>*   fHisto2ds;
     TString*        fHisto2d_operated;
     TString         fHisto2d_operated_backup;
@@ -56,6 +57,7 @@ public:
         UInt_t ,                /* height */
         TString* histo2d_list,   /* value passing by reference */
         vector<TH2*>*  histo2ds,
+        TH2*           histo2d,
         TString* message  );
 
     void    To_response_key( Event_t* );
@@ -88,6 +90,8 @@ private:
     void    to_use_TCutG(  TString epr);
 
     void    to_exchange_axis(TString epr);
+
+    void    to_apply_formula( TString epr );
 
 };
 
@@ -177,6 +181,8 @@ void Dlg_Operation_histo2ds::Parse_expression( ){
 
     else if( epr.Contains("overlap") ) { to_overlap_two_TH2(epr); }
 
+    else if( epr.Contains("let")) { to_apply_formula( epr); }
+
     else if( go_special_case ) { Special_case( epr );  }
 
     else if( go_general_case ) { General_case( epr );  }
@@ -185,12 +191,11 @@ void Dlg_Operation_histo2ds::Parse_expression( ){
 
     else if( epr.SubString("del") != "" ) { del_spectra( epr); }
 
+
+
     CloseWindow();
 
 }
-
-
-
 
 
 void Dlg_Operation_histo2ds::Cancel(){
@@ -608,6 +613,107 @@ void Dlg_Operation_histo2ds::to_use_TCutG( TString epr ) {
 }
 
 
+void Dlg_Operation_histo2ds::to_apply_formula( TString epr ) {
+
+
+    //============================================
+    // parse epr and create formula
+    // epr will be
+    // " let x = x + 1 " subject = x, formula = x + 1
+    // " let y = x * y + sin( 2*y) " etc...
+
+    TObjArray* tmp_array;
+    tmp_array= epr.Tokenize( "=" );
+    int sizeN = tmp_array->GetEntries();
+
+    TString formula =  ( (TObjString*)tmp_array->At( sizeN-1) ) -> GetString();
+
+    TString subject =  ( (TObjString*)tmp_array->At(0) ) -> GetString();
+
+    // when we contain 'y' in the formula, ROOT will treat it as TF2.
+    // ex. let y = y + 1.
+    // the actual one is 0*x + y + 1
+    bool isTF2 = ( formula.Contains( "y") );
+
+
+
+    //============================================
+    // to adjust the TH2 according to formula
+    //
+    int binxN = fHisto2d->GetXaxis()->GetNbins();
+    int binyN = fHisto2d->GetYaxis()->GetNbins();
+
+    unique_ptr<TH2> histo2d_copy(  (TH2*) fHisto2d->Clone() );
+    bool toX = ( subject.Contains("x") );
+
+    if( isTF2 ) {
+
+        // formula: x = x + y + 1
+        // or       x = y
+        // or       y = y + 1
+
+        unique_ptr<TF2> func( new TF2("func", formula.Data() ) );
+
+        if( func->IsValid() )
+        {
+            *fMessage = "apply formula";
+            fHisto2d->Reset();
+            for( int ix=1; ix<=binxN; ++ix ) {
+            for( int iy=1; iy<=binyN; ++iy ) {
+
+                int counts = histo2d_copy->GetBinContent(ix, iy);
+                if( counts == 0 ) continue;
+
+                double x = fHisto2d->GetXaxis()->GetBinCenter( ix );
+                double y = fHisto2d->GetYaxis()->GetBinCenter( iy );
+
+                if( toX ){
+                    double xNew = func->Eval( x, y );
+                    int    ixNew = fHisto2d->GetXaxis()->FindBin( xNew );
+                    fHisto2d->SetBinContent( ixNew, iy, counts );
+
+                } else {
+                    double yNew = func->Eval( x, y );
+                    int    iyNew = fHisto2d->GetYaxis()->FindBin( yNew );
+                    fHisto2d->SetBinContent( ix , iyNew, counts );
+                }
+            }}
+        }
+    }
+    else {
+
+        //  formula ex. x = x + 1
+
+        unique_ptr<TF1> func( new TF1("func", formula.Data() ) );
+
+        if( func->IsValid() )
+        {
+            *fMessage = "apply formula";
+            fHisto2d->Reset();
+            for( int ix=1; ix<=binxN; ++ix ) {
+            for( int iy=1; iy<=binyN; ++iy ) {
+
+
+                int counts = histo2d_copy->GetBinContent(ix, iy);
+                if( counts == 0 ) continue;
+
+                double x = fHisto2d->GetXaxis()->GetBinCenter( ix );
+                double y = fHisto2d->GetYaxis()->GetBinCenter( iy );
+
+                if( toX ){
+                    double xNew = func->Eval( x );
+                    int    ixNew = fHisto2d->GetXaxis()->FindBin( xNew );
+                    fHisto2d->SetBinContent( ixNew, iy, counts );
+                }
+            }}
+        }
+    }
+
+}
+
+
+
+
 bool Dlg_Operation_histo2ds::Special_case( TString epr ){
 
     // we just have one "=", and no other operators.
@@ -841,6 +947,7 @@ Dlg_Operation_histo2ds::Dlg_Operation_histo2ds(
                 UInt_t h,
                 TString* histo2d_list,
                 vector<TH2*>*  histo2ds,
+                TH2*           histo2d,
                 TString* message )
 : TGMainFrame(p, w, h) {
 
@@ -850,6 +957,7 @@ Dlg_Operation_histo2ds::Dlg_Operation_histo2ds(
     fHisto2d_operated = histo2d_list;
     fHisto2d_operated_backup= histo2d_list->Copy();
 
+    fHisto2d = histo2d;  // the current active TH2.
     fHisto2ds = histo2ds;
     fMessage = message;
 

@@ -3187,7 +3187,7 @@ void ROOTSCOPE::To_show_histo2d_operation_dlg() {
     // output message. We use it as the key to do the specific task.
     new Dlg_Operation_histo2ds( gClient->GetRoot(),
         500, 400,
-        &histo2d_operated, &histo2ds, &output_message);
+        &histo2d_operated, &histo2ds, histo2d, &output_message);
 
     // to display a TH2 histogram
     // when we just type in number, however, currently,
@@ -3432,6 +3432,15 @@ void ROOTSCOPE::To_show_histo2d_operation_dlg() {
         delete histo2dNew;
     }
 
+    // to apply a formula to the current active TH2 object.
+    // command as "let x = x + 1"
+    if( output_message.Contains("apply formula")   ){
+
+        To_backup_histo2ds();
+        To_display_histo2ds( 0 );
+    }
+
+
 }
 
 
@@ -3446,7 +3455,7 @@ void ROOTSCOPE::To_show_histo_operation_dlg() {
     TString output_message = "";
 
     new Dlg_Operation_histos( gClient->GetRoot(), 500, 400,
-                             &histo_operated, &histos, &output_message );
+                             &histo_operated, &histos, histo, &output_message );
 
     if( output_message.Contains("open TH1 spectrum:") ) {
 
@@ -3462,9 +3471,17 @@ void ROOTSCOPE::To_show_histo_operation_dlg() {
         // to avoid the empty opne list
         if( fOpen_list.size() == 0 ) { fOpen_list.push_back(0); }
 
-    } else {
+    }
+    else if ( output_message.Contains("apply formula") ){
 
+        // we don't need to do anything there.
+        // task has been done at Dlg_Operation_histos::to_apply_formula
+
+    }
+    else {
+        // from 99 = 2 + 1, or 3 =2 , etc ... histogram operation.
         // open the one we just operated.
+
         fOpen_list.clear();
         fOpen_list.push_back( histo_operated.Atoi() );
         *fText_viewer << output_message.Data()  <<  endl;
@@ -4597,10 +4614,12 @@ void ROOTSCOPE::Show_command_1d() {
    99 = 1.5 * 2  let histo99 = 1.5 * histo2 \n \
    99 += *       let histo99 = sum over all histos \n \
    del 1 3 5     del histo 1, 3, and 5 \n \
-   del 1..5      del histo 1 to 5 \
+   del 1..5      del histo 1 to 5 \n\
+   let x = x+1  to apply a formula to shift x. (any valid TF1) \
    ";
  *fText_viewer << Form("%s", info.Data() )  <<  endl;
  fText_viewer->ShowBottom();
+ cout << info.Data() << endl;
 }
 
 
@@ -4617,10 +4636,13 @@ void ROOTSCOPE::Show_command_2d() {
    crop [2]      to keep the data and in a given region while exclude all the rest. \n \
    exclude [2]   to exclude data in a given region at histo2. \n \
    exchange axis [2]   to exchange x <==> y axis. \n \
-   overlap 1 2   to overlap histo1+histo2 \
+   overlap 1 2   to overlap histo1+histo2 \n \
+   let x= x * y + 1 to apply a formulat to shift x ( any valid TF1/TF2)\n \
+   let y= x * y + 1 to apply a formulat to shift y ( any valid TF1/TF2)\n \
    ";
  *fText_viewer << Form("%s", info.Data() )  <<  endl;
  fText_viewer->ShowBottom();
+ cout << info.Data() << endl;
 }
 
 

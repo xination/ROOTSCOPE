@@ -2771,6 +2771,7 @@ class Dlg_Operation_histos: public TGMainFrame {
 
 private:
 
+    TH1*             fHisto;
     vector<TH1*>*    fHistos;
     TString*        fHisto_list;
     TString*        fMessage;
@@ -2802,6 +2803,7 @@ public:
         UInt_t ,                /* height */
         TString* histo_list,   /* value passing by reference */
         vector<TH1*>*  histos,
+        TH1*           histo,
         TString* message  );
 
     void    To_response_key( Event_t* );
@@ -2825,6 +2827,8 @@ public:
     void    del_spectra( TString epr );
 
     void    to_display_histos( TString epr);
+
+    void    to_apply_formula( TString epr);
 };
 
 
@@ -2883,6 +2887,55 @@ void Dlg_Operation_histos::Update_entry_output( char* entry_output ) {
     fEntry_out = entry_output;
 }
 
+void Dlg_Operation_histos::to_apply_formula( TString epr ){
+
+
+    //============================================
+    // parse epr and create formula
+    // epr will be
+    // " let x = x + 1 " subject = x, formula = x + 1
+
+
+    TObjArray* tmp_array;
+    tmp_array= epr.Tokenize( "=" );
+    int sizeN = tmp_array->GetEntries();
+
+    TString formula =  ( (TObjString*)tmp_array->At( sizeN-1) ) -> GetString();
+
+
+
+
+    //============================================
+    // to adjust the TH1 according to formula
+    //
+    int binxN = fHisto->GetXaxis()->GetNbins();
+    unique_ptr<TH1> histo_copy(  (TH1*) fHisto->Clone() );
+
+
+
+    //  formula ex. x = x + 1
+    unique_ptr<TF1> func( new TF1("func", formula.Data() ) );
+
+    if( func->IsValid() )
+    {
+        *fMessage = "apply formula";
+        fHisto->Reset();
+        for( int ix=1; ix<=binxN; ++ix ) {
+
+            int counts = histo_copy->GetBinContent(ix);
+            if( counts == 0 ) continue;
+
+            double x = fHisto->GetXaxis()->GetBinCenter( ix );
+            double xNew  = func->Eval( x );
+            int    ixNew = fHisto->GetXaxis()->FindBin( xNew );
+            fHisto->SetBinContent( ixNew,  counts );
+
+        }
+    }
+
+
+
+}
 
 void Dlg_Operation_histos::del_spectra( TString epr ){
 
@@ -3516,11 +3569,13 @@ void Dlg_Operation_histos::Parse_expression( ){
     //general case for example: 3 = 2 + 1, 99 = -1 * 2 ( one equal sign + one operator )
 
 
-    if( epr.SubString("+=") != "" ) {  combo_case( epr ); }
-
-    if( epr.SubString("del") != "" ) { del_spectra( epr); }
-
     if( epr.IsDigit() ) { to_display_histos( epr ); }
+
+    else if( epr.Contains("+=") ) { combo_case( epr ); }
+
+    else if( epr.Contains("del") ) { del_spectra( epr ); }
+
+    else if( epr.Contains("let") ) { to_apply_formula( epr ); }
 
     CloseWindow();
 
@@ -3536,6 +3591,7 @@ Dlg_Operation_histos::Dlg_Operation_histos(
                 UInt_t h,
                 TString* histo_list,
                 vector<TH1*>*  histos,
+                TH1*           histo,
                 TString* message )
 : TGMainFrame(p, w, h) {
 
@@ -3544,6 +3600,7 @@ Dlg_Operation_histos::Dlg_Operation_histos(
     fHisto_list = histo_list;
     fHisto_list_backup= histo_list->Copy();
 
+    fHisto  = histo;
     fHistos = histos;
     fMessage = message;
 
