@@ -2481,6 +2481,10 @@ void ROOTSCOPE::To_backup_histo2ds() {
 
     // to clone the histo2ds to histo2ds_backup
 
+    for ( int i = 0; i < histo2ds_backup.size(); i++ )
+    { delete histo2ds_backup[i]; }
+    // since we store TH2 pointer, we need to manually remove it.
+
     histo2ds_backup.clear();
 
     int histo2d_size = histo2ds.size();
@@ -2501,6 +2505,10 @@ void ROOTSCOPE::To_backup_histo2ds() {
 void ROOTSCOPE::To_backup_histos() {
 
     // to clone the histos to histos_backup
+
+    for ( int i = 0; i < histos_backup.size(); i++ )
+    { delete histos_backup[i]; }
+    // since we store TH1 pointer, we need to manually remove it.
 
     histos_backup.clear();
 
