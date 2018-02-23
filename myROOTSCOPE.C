@@ -1233,9 +1233,9 @@ void ROOTSCOPE::Create_Widgets( UInt_t w, UInt_t h  ) {
 
         fMenu_Entries[2]-> AddEntry( Form("%-20s\t%6s", "show commands",""), 201 );
 
-        fMenu_Entries[2]-> AddEntry( Form("%-20s\t%6s", "project to x","p"), 202 );
+        fMenu_Entries[2]-> AddEntry( Form("%-20s\t%6s", "gate x, project to y","p"), 202 );
 
-        fMenu_Entries[2]-> AddEntry( Form("%-20s\t%6s", "project to y","P"), 203 );
+        fMenu_Entries[2]-> AddEntry( Form("%-20s\t%6s", "gate y, project to x","P"), 203 );
 
         fMenu_Entries[2]->
         AddEntry( Form("%-20s\t%6s", "whole project to xy","ctrl+P"), 219 );
