@@ -1624,7 +1624,6 @@ void ROOTSCOPE::Fit_Gaussian() {
             fitted_c, area/histo->GetBinWidth(1), FWHM, chisqr, area/fCmp, fCmp ) <<  endl;
         fText_viewer->ShowBottom();
 
-         //cout  <<  Form( "\ntest =>h= %6.2f, c = %6.2f, sigma = %6.2f\n", fitted_h, fitted_c, fitted_sigma) <<  endl;
     }
 
 }
@@ -3597,7 +3596,9 @@ void ROOTSCOPE::To_show_AddSub_gate_dlg( ) {
         //
         //  To append the new histo to histos
         //
-        int histo2d_num = fOpen2d_list.at(0)+1;
+        int histo2d_num = 1;
+        if( fOpen2d_list.size() > 0 ) { histo2d_num = fOpen2d_list.at(0)+1; }
+
         TH1*    pHisto;
         TString pHisto_title;
         pHisto = gateManager->get_histogram();
@@ -3608,6 +3609,7 @@ void ROOTSCOPE::To_show_AddSub_gate_dlg( ) {
         pHisto->SetTitle( pHisto_title.Data() );
         histos.push_back( pHisto );
         delete gateManager;
+
 
         To_backup_histos();
         fOpen_list.clear();
@@ -3648,7 +3650,8 @@ void ROOTSCOPE::Project_from_1d( bool flagXY ){
         float yMin = Get_Min_range( fXrange_pick1, fXrange_pick2 );
         int biny1 = histo2d->GetYaxis()-> FindBin(yMin);
         int biny2 = histo2d->GetYaxis()-> FindBin(yMax);
-        int histo2d_num = fOpen2d_list.at(0)+1;
+        int histo2d_num = 1;
+        if( fOpen2d_list.size() > 0 ) { histo2d_num = fOpen2d_list.at(0)+1; }
 
 
 
@@ -5063,7 +5066,7 @@ ROOTSCOPE::ROOTSCOPE( const TGWindow * p, const char* rootFileName  )
 
 
 void myROOTSCOPE() {
-    // printf( "~Test~\n");
+
 
 
 
