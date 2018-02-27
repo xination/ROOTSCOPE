@@ -1427,7 +1427,7 @@ void ROOTSCOPE::Get_Sum( bool isTH2 ) {
         area = area - area_bg;
 
         *fText_viewer
-        << Form("\nsum over the range %.1f to %.1f (binwith = %.2f total bin = %d)\n" , xMin, xMax, histo->GetBinWidth(1), histo->GetNbinsX() )
+        << Form("\nsum over the range %.1f to %.1f (binwidth = %.2f total bin = %d)\n" , xMin, xMax, histo->GetBinWidth(1), histo->GetNbinsX() )
         << Form("area/cmp = %.1f (bg = %.f, cmp = %d). \n",  area/fCmp, area_bg, fCmp)
         << Form("We have %d counts above bg.", counts)  <<  endl;
         fText_viewer->ShowBottom();
@@ -1620,8 +1620,8 @@ void ROOTSCOPE::Fit_Gaussian() {
 
 
         *fText_viewer <<
-            Form( "\nCenter = %5.3f, Area/cmp = %5.2f, FWHM = %7.4f, Chisqr/N = %5.2f (cmp=%d)",
-            fitted_c, area/fCmp, FWHM, chisqr, fCmp ) <<  endl;
+            Form( "\nCenter = %5.3f, cnt = %5.2f FWHM = %7.4f, Chisqr/N = %5.2f, Area/cmp = %5.2f (cmp=%d)\n",
+            fitted_c, area/histo->GetBinWidth(1), FWHM, chisqr, area/fCmp, fCmp ) <<  endl;
         fText_viewer->ShowBottom();
 
          //cout  <<  Form( "\ntest =>h= %6.2f, c = %6.2f, sigma = %6.2f\n", fitted_h, fitted_c, fitted_sigma) <<  endl;
@@ -1836,11 +1836,11 @@ void ROOTSCOPE::Fit_Double_Gaussian() {
 
 	    *fText_viewer
             <<
-            Form( "\nPeak1 Center = %5.3f, Area/cmp = %5.2f, FWHM = %5.2f\n",
-                fitted_c1, area1/fCmp, FWHM1 )
+            Form( "\nPeak1 Center = %5.3f, cnt = %5.2f, FWHM = %5.2f, Area/cmp = %5.2f\n",
+                fitted_c1, area1/histo->GetBinWidth(1), FWHM1, area1/fCmp)
             <<
-            Form( "Peak2 Center = %5.3f, Area/cmp = %5.2f, FWHM = %5.2f\n",
-                fitted_c2, area2/fCmp, FWHM2 )
+            Form( "Peak2 Center = %5.3f, cnt = %5.2f, FWHM = %5.2f, Area/cmp = %5.2f\n",
+                fitted_c2, area2/histo->GetBinWidth(1), FWHM2, area2/fCmp )
             <<
             Form( "Chisqr/N = %5.2f (cmp=%d)", chisqr, fCmp )
             <<  endl;
@@ -1851,11 +1851,11 @@ void ROOTSCOPE::Fit_Double_Gaussian() {
 
 	    *fText_viewer
             <<
-            Form( "\nPeak1 Center = %5.3f, Area/cmp = %5.2f, FWHM = %5.2f\n",
-                fitted_c2, area2/fCmp, FWHM2 )
+            Form( "\nPeak1 Center = %5.3f, cnt = %5.2f, FWHM = %5.2f, Area/cmp = %5.2f\n",
+                fitted_c2, area2/histo->GetBinWidth(1), FWHM2, area2/fCmp )
             <<
-            Form( "Peak2 Center = %5.3f, Area/cmp = %5.2f, FWHM = %5.2f\n",
-                fitted_c1, area1/fCmp, FWHM1 )
+            Form( "Peak2 Center = %5.3f, cnt = %5.2f, FWHM = %5.2f, Area/cmp = %5.2f\n",
+                fitted_c1, area1/histo->GetBinWidth(1), FWHM1, area1/fCmp )
             <<
             Form( "Chisqr/N = %5.2f (cmp=%d)", chisqr, fCmp )
             <<  endl;
