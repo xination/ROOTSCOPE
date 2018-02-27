@@ -280,6 +280,8 @@ private:
 
     void To_switch_histo2d( bool toIncrease );
 
+    void To_create_profile_histo( bool _toX );
+
 
 
     //----------------------------------------- utility
@@ -3216,6 +3218,9 @@ void ROOTSCOPE::To_show_histo2d_operation_dlg() {
 
 
 
+
+
+
     // to use TCutG
     // command as "sum 2" or "sum"
     if( output_message.Contains("use_TCutG")   ){
@@ -3448,6 +3453,19 @@ void ROOTSCOPE::To_show_histo2d_operation_dlg() {
         To_display_histo2ds( 0 );
     }
 
+
+    if( output_message.Contains("profile")   ){
+
+        if( output_message.Contains("X") || output_message.Contains("x") )
+        {
+            To_create_profile_histo(1); // to x
+        }
+        else if ( output_message.Contains("Y") || output_message.Contains("y") )
+        {
+            To_create_profile_histo(0); // to y
+        }
+
+    }
 
 }
 
@@ -3705,7 +3723,7 @@ void ROOTSCOPE::Project_from_1d( bool flagXY ){
 
 
             *fText_viewer <<
-            Form("create a histo from gating Y: %.1f toŮ %.1f, at spec %d\n",
+            Form("create a histo from gating Y: %.1f to %.1f, at spec %d\n",
                 yMin, yMax, static_cast<int>(histos.size()) ) ;
             fText_viewer->ShowBottom();
         }
@@ -3768,7 +3786,7 @@ void ROOTSCOPE::Projection_2d( bool flagXY, bool toShow = true ){
     int biny1 = histo2d->GetYaxis()-> FindBin(yMin);
     int biny2 = histo2d->GetYaxis()-> FindBin(yMax);
 
-    // the get the histo2d number from the clicked pad.
+    // to get the histo2d number from the clicked pad.
     int idx;
     if( fPadTotalN == 1 ){ idx = 0; }
     else if ( fPadTotalN > 1 ){ idx = fPadActive - 1; }
@@ -3908,6 +3926,112 @@ void ROOTSCOPE::SetMarker_2d(Event_t* e){
 }
 
 
+
+void ROOTSCOPE::To_create_profile_histo( bool _toX ){
+
+
+    float xMax = Get_Max_range( fH2_pickX[0], fH2_pickX[1] );
+    float xMin = Get_Min_range( fH2_pickX[0], fH2_pickX[1] );
+    float yMax = Get_Max_range( fH2_pickY[0], fH2_pickY[1] );
+    float yMin = Get_Min_range( fH2_pickY[0], fH2_pickY[1] );
+
+    int binx1 = histo2d->GetXaxis()-> FindBin(xMin);
+    int binx2 = histo2d->GetXaxis()-> FindBin(xMax);
+    int biny1 = histo2d->GetYaxis()-> FindBin(yMin);
+    int biny2 = histo2d->GetYaxis()-> FindBin(yMax);
+
+
+
+    // to avoid user hasn't set markers.
+    if( xMax==0 && xMin==0 && yMax==0 && yMin == 0 ) {
+         binx1 = 1;
+         binx2 = histo2d->GetXaxis()->GetNbins();
+         biny1 = 1;
+         biny2 = histo2d->GetYaxis()->GetNbins();
+         xMin = histo2d->GetXaxis()->GetBinLowEdge( binx1 );
+         xMax = histo2d->GetXaxis()->GetBinUpEdge(  binx2 );
+         yMin = histo2d->GetYaxis()->GetBinLowEdge( biny1 );
+         yMax = histo2d->GetYaxis()->GetBinUpEdge(  biny2 );
+    }
+
+    // to get the histo2d number from the clicked pad.
+    int idx;
+    if( fPadTotalN == 1 ){ idx = 0; }
+    else if ( fPadTotalN > 1 ){ idx = fPadActive - 1; }
+    int histo2d_num = fOpen2d_list.at(idx)+1;
+
+
+    // loop over all the whole or zoom-in histo2d.
+
+    if( _toX ) // for x profile
+    {
+
+        // create the hProfX 1D histo
+        int binN = binx2-binx1+1;
+        TH1F* hProfX = new TH1F( "hProfX", "title",binN, xMin, xMax );
+        hProfX->SetName( Form("%s_profx_%f", histo2d->GetName(),
+                                             gRandom->Uniform()  ) );
+        hProfX->SetTitle( Form("[%d]_profX", histo2d_num ) );
+
+        for( Int_t i =binx1; i<binx2; i++ )
+        {
+            float yMean  = 0;
+            float cnt = 0;
+            for( Int_t j =biny1; j<biny2; j++ )
+            {
+                float countN = histo2d->GetBinContent( i, j );
+                yMean += histo2d->GetYaxis()->GetBinCenter( j ) * countN;
+                cnt += countN;
+            }
+            if( cnt != 0 ) {yMean /= cnt;}
+            hProfX->SetBinContent( i-binx1, yMean );
+        }
+
+        histos.push_back( (TH1*) hProfX->Clone() );
+        delete hProfX;
+
+        *fText_viewer <<
+        Form("create a profile histo from X: %.1f - %.1f from TH2 [%d], to spec %d\n",
+            xMin, xMax, histo2d_num, static_cast<int>(histos.size()) );
+        fText_viewer->ShowBottom();
+    }
+    else // for y profile
+    {
+        // create the hProfY 1D histo
+        int binN = biny2-biny1+1;
+        TH1F* hProY = new TH1F( "hProY", "title",binN, yMin, yMax );
+        hProY->SetName( Form("%s_profY_%f", histo2d->GetName(),
+                                             gRandom->Uniform()  ) );
+        hProY->SetTitle( Form("[%d]_profY", histo2d_num ) );
+
+        for( Int_t i =biny1; i<biny2; i++ )
+        {
+            float xMean  = 0;
+            float cnt = 0;
+            for( Int_t j =binx1; j<binx2; j++ )
+            {
+                float countN = histo2d->GetBinContent( i, j );
+                xMean += histo2d->GetXaxis()->GetBinCenter( j ) * countN;
+                cnt += countN;
+            }
+            if( cnt != 0 ) {xMean /= cnt;}
+            hProY->SetBinContent( i-biny1, xMean );
+        }
+
+        histos.push_back( (TH1*) hProY->Clone() );
+        delete hProY;
+
+        *fText_viewer <<
+        Form("create a profile histo from Y: %.1f - %.1f from TH2 [%d], to spec %d\n",
+            yMin, yMax, histo2d_num, static_cast<int>(histos.size()) );
+        fText_viewer->ShowBottom();
+    }
+
+    To_backup_histos();
+    fOpen_list.clear();
+    fOpen_list.push_back( histos.size() - 1 );  // index for the last one
+    To_display_histos( 0 );
+}
 
 void ROOTSCOPE::Expand_2d_dlg( ) {
 
@@ -4644,6 +4768,7 @@ void ROOTSCOPE::Show_command_2d() {
    crop [2]      to keep the data and in a given region while exclude all the rest. \n \
    exclude [2]   to exclude data in a given region at histo2. \n \
    exchange axis [2]   to exchange x <==> y axis. \n \
+   profile x/y     to get the x or y profile 1d histogram \n \
    overlap 1 2   to overlap histo1+histo2 \n \
    let x= x * y + 1 to apply a formulat to shift x ( any valid TF1/TF2)\n \
    let y= x * y + 1 to apply a formulat to shift y ( any valid TF1/TF2)\n \

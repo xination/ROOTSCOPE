@@ -93,6 +93,7 @@ private:
 
     void    to_apply_formula( TString epr );
 
+
 };
 
 
@@ -183,6 +184,8 @@ void Dlg_Operation_histo2ds::Parse_expression( ){
 
     else if( epr.Contains("let")) { to_apply_formula( epr); }
 
+    else if( epr.Contains("profile") ) { *fMessage = epr; }
+
     else if( go_special_case ) { Special_case( epr );  }
 
     else if( go_general_case ) { General_case( epr );  }
@@ -193,9 +196,12 @@ void Dlg_Operation_histo2ds::Parse_expression( ){
 
 
 
+
+
     CloseWindow();
 
 }
+
 
 
 void Dlg_Operation_histo2ds::Cancel(){
