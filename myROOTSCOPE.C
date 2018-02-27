@@ -139,7 +139,6 @@ private:
 
 
     //---------------for fitting 1d histo---------------------//
-    TF1*    simple_gaus;                /* only for testing*/
     TF1*    fTF1_bg_const;              /* bg = const */
     TF1*    fTF1_bg_linear;             /* bg = const + linear*x */
     TF1*    fTF1_gaus_bg;               /* y = guas(x) + a*x + c */
@@ -1109,7 +1108,6 @@ void ROOTSCOPE::Initialization() {
 
     fBG_const  = 0.0;
     fBG_linear = 0.0;
-    simple_gaus = new TF1("simple_gaus", "gaus", fXrange_pick1, fXrange_pick2 );
 
     fTF1_bg_const  = new TF1("background_pol0", "pol0");
     fTF1_bg_linear = new TF1("background_pol1", "pol1");
