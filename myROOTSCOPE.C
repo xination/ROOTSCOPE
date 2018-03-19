@@ -36,6 +36,7 @@
 #include <TGTextEntry.h>
 #include <TGNumberEntry.h>
 #include <TGTextViewStream.h>
+#include <TGMenu.h>
 
 #include <fstream>
 
@@ -244,7 +245,7 @@ private:
 
     void To_full_xy_projection();
 
-    void Projection_2d( bool flagXY, bool toShow = true  );
+    void Projection_2d( bool flagXY, bool toShow   );
 
     void SetMarker_2d( Event_t* );
 
@@ -557,9 +558,9 @@ void ROOTSCOPE::To_response(Event_t* e) {
 
                  if( key_symbol == kKey_q  ) { To_Back_to_disply_histos(); }
 
-            else if( key_symbol == kKey_p  ) { Projection_2d( 1 ); }
+            else if( key_symbol == kKey_p  ) { Projection_2d( 1, true ); }
 
-            else if( key_symbol == kKey_P  ) { Projection_2d( 0 ); }
+            else if( key_symbol == kKey_P  ) { Projection_2d( 0, true ); }
 
             else if( key_symbol == kKey_n  ) { Clear_Marker2d( ); }
 
@@ -1100,11 +1101,10 @@ void ROOTSCOPE::Initialization() {
         fH2_pickX[i] = 0;
         fH2_pickY[i] = 0;
     }
+
     fWhich_active_2d = 1;
     fCmp_2d_X = 1;
     fCmp_2d_Y = 1;
-
-
 
     fBG_const  = 0.0;
     fBG_linear = 0.0;
@@ -4693,8 +4693,8 @@ void ROOTSCOPE::To_response_menu( Int_t menu_id ){
     if( fIsTH2_inPad ) {
 	switch( menu_id ) {
         case 200: To_show_histo2d_operation_dlg(); break;
-        case 202: Projection_2d( 1 ); break;
-        case 203: Projection_2d( 0 ); break;
+        case 202: Projection_2d( 1, true ); break;
+        case 203: Projection_2d( 0, true ); break;
 
         case 204: Expand_2d(); break;
         case 205: Unexpand_2d(); break;
