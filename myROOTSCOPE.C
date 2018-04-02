@@ -361,6 +361,8 @@ public:
     template <class T>
     void AddHisto(T* input);
 
+    void AddRootFile( const char* filename );
+
     TString GetMessage(){ return fText_viewer->GetText()->AsString();  }
 
     TCanvas* GetCanvas() { return c1; }
@@ -4370,8 +4372,6 @@ void ROOTSCOPE::To_readinFile( ){
         fOpen_list.push_back( histos.size()-1 );
         Single_pad_setting(); // single pad
         To_display_histos( 1 );
-
-
     }
 
     if( tmpManager->Get_hasTH2() ) {
@@ -4663,6 +4663,49 @@ template <class T> void ROOTSCOPE::AddHisto( T* histo_input) {
 }
 
 
+
+ void ROOTSCOPE::AddRootFile( const char* rootfilename ){
+
+    // a simplify version from To_readinFile() (private)
+    // here, AddRootFile is a public function,
+    // and it doesn't take file dialog.
+
+
+    TString inFileName  = rootfilename;
+    *fText_viewer << Form("read in %s", inFileName.Data() )<< endl;
+    fText_viewer->ShowBottom();
+
+    ReadIn_and_parse* tmpManager
+        = new ReadIn_and_parse( &histos, &histo2ds, inFileName  );
+        // we append the 1d/2d histos from file into our vectors.
+
+    if( tmpManager->IS_hasNewTH1() ) {
+        To_backup_histos();
+
+        // switch to the latest one.
+        histo = histos.at( histos.size()-1  );
+        histo_backup = histos_backup.at( histos.size()-1 );
+        fOpen_list.clear();
+        fOpen_list.push_back( histos.size()-1 );
+        Single_pad_setting(); // single pad
+        To_display_histos( 0 );
+    }
+
+    if( tmpManager->Get_hasTH2() ) {
+        To_backup_histo2ds();
+        fHasTH2 = 1;
+
+        // switch to the last one.
+        histo2d = histo2ds.at( histo2ds.size()-1 );
+        histo2d_backup = histo2ds_backup.at( histo2ds.size()-1 );
+        fOpen2d_list.clear();
+        fOpen2d_list.push_back( histo2ds.size()-1 );
+        To_display_histo2ds( 0 );
+
+    }
+
+
+ }
 
 void ROOTSCOPE::To_response_menu( Int_t menu_id ){
 
