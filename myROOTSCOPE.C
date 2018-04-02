@@ -4363,18 +4363,31 @@ void ROOTSCOPE::To_readinFile( ){
         Form("add  %d 1d histogram", tmpManager->Get_loadedTH1number() )<< endl;
         fText_viewer->ShowBottom();
 
+        // switch to the latest one.
+        histo = histos.at( histos.size()-1  );
+        histo_backup = histos_backup.at( histos.size()-1 );
+        fOpen_list.clear();
+        fOpen_list.push_back( histos.size()-1 );
+        Single_pad_setting(); // single pad
+        To_display_histos( 1 );
+
+
     }
 
-    if( tmpManager->Get_hasTH2() && fHasTH2==0 ) {
-        // previously we don't have 2d histo, but now we have.
-        // and so we need to assign one of them to histo2d.
-        histo2d = histo2ds.at(0);
-        histo2d_backup = (TH2*) histo2d->Clone();
+    if( tmpManager->Get_hasTH2() ) {
         To_backup_histo2ds();
         fHasTH2 = 1;
         *fText_viewer
         <<Form("add  %d 2d histogram", tmpManager->Get_loadedTH2number() )<< endl;
         fText_viewer->ShowBottom();
+
+        // switch to the last one.
+        histo2d = histo2ds.at( histo2ds.size()-1 );
+        histo2d_backup = histo2ds_backup.at( histo2ds.size()-1 );
+        fOpen2d_list.clear();
+        fOpen2d_list.push_back( histo2ds.size()-1 );
+        To_display_histo2ds( 1 );
+
     }
 
 
