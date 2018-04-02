@@ -1,38 +1,47 @@
 #!/bin/bash
 
-rootfile=$1
+rootfiles=$@
+nRootFiles=$#
 path=$(pwd)
 OUTFILE="${path}/rootscope_temp.C"
 
-rootscope_path="${path}/myROOTSCOPE.C"
+ 
 
-#
-# create a root script
-#
-if [ -z $1 ] 
-then
-    #no argument
+
+if (( nRootFiles == 0 )) ;then
+
+    # rootfiles are an empty string.
 (
     cat <<EOF1
-#include <${path}/myROOTSCOPE.C>
- void rootscope_temp(){
-     new ROOTSCOPE ( gClient->GetRoot());
- }
+#include "${path}/myROOTSCOPE.C"
+ROOTSCOPE* app;
+void rootscope_temp(){
+    app = new ROOTSCOPE ( gClient->GetRoot());
+}
 EOF1
 )>$OUTFILE
-
-    echo "use ctrl+r to load a rootfile containing TH1 or TH2"
 else
-
+    # we have one root file or more . 
+    outStr=""
+    NEWLINE=$'\n\t'
+    for rootfile in ${rootfiles}
+    do
+        outStr="${outStr}app->AddRootFile(\"${rootfile}\");"$NEWLINE 
+    done
 (
-cat <<EOF1
-#include <${rootscope_path}>
- void rootscope_temp(){
-     new ROOTSCOPE ( gClient->GetRoot(), "$path/$rootfile" );
- }
-
+    cat <<EOF1
+#include "${path}/myROOTSCOPE.C"
+ROOTSCOPE* app;
+void rootscope_temp(){
+    app = new ROOTSCOPE ( gClient->GetRoot());
+    ${outStr}
+}
 EOF1
 )>$OUTFILE
-
 fi
+ 
+# print msg to user 
+for rootfile in $rootfiles; do
+    echo  "open $rootfile "
+done
 root -l $OUTFILE
