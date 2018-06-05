@@ -4670,6 +4670,7 @@ template <class T> void ROOTSCOPE::AddHisto( T* histo_input) {
     // here, AddRootFile is a public function,
     // and it doesn't take file dialog.
 
+    Remove_default_empty_histo(); // remove the default empty histo.
 
     TString inFileName  = rootfilename;
     *fText_viewer << Form("read in %s", inFileName.Data() )<< endl;
