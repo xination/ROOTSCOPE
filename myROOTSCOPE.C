@@ -76,6 +76,7 @@ private:
     Int_t   fOverlaph2Idx;
     Bool_t  fOverlapMode;
     TGaxis* faxis;
+    TString   fH1DrawOption;               /* the 1D histo draw option*/
 
     TLine*  myline1;                     /* line marker 1 */
     TLine*  myline2;                     /* line marker 2 */
@@ -805,7 +806,7 @@ void ROOTSCOPE::Set_Y_Range( ) {
 
         histo->GetYaxis()->SetRangeUser( 0, y_max );
         c1->cd( fPadActive);
-        histo->Draw();
+        histo->Draw( fH1DrawOption.Data() );
         c1->Update();
 
     } else{
@@ -842,7 +843,7 @@ void ROOTSCOPE::Clear_Marker(){
 
 
     c1->cd( fPadActive);
-    histo->Draw();
+    histo->Draw( fH1DrawOption.Data() );
     c1->Update();
 
 }
@@ -1054,6 +1055,7 @@ void ROOTSCOPE::Get_active_histo1D() {
 
 void ROOTSCOPE::Initialization() {
 
+    fH1DrawOption = "histo"; 
     fToUseMenuBar = true;
 
     const Int_t nfoundMax = 100;
@@ -1883,7 +1885,7 @@ void ROOTSCOPE::Expand( ) {
     {
         // only expand the histo in the selected pad.
         histo->GetXaxis()->SetRangeUser( xMin, xMax);
-        histo->Draw();
+        histo->Draw( fH1DrawOption.Data() );
         c1->Update();
 
     }
@@ -1896,7 +1898,7 @@ void ROOTSCOPE::Expand( ) {
         for( int i=1; i <= fPadTotalN; i++ ) {
             c1->cd(i);
             Get_histo_by_padnum(i)->GetXaxis()->SetRangeUser( xMin, xMax);
-            Get_histo_by_padnum(i)->Draw();
+            Get_histo_by_padnum(i)->Draw(  fH1DrawOption.Data() );
         }
         c1->Update();
         c1->cd( fPadActive );
@@ -1928,7 +1930,7 @@ void ROOTSCOPE::Expand_dlg( ) {
     {
         // only expand the histo in the selected pad.
         histo->GetXaxis()->SetRangeUser( xMin, xMax);
-        histo->Draw();
+        histo->Draw(  fH1DrawOption.Data() );
         c1->cd( fPadActive );
         c1->Update();
     }
@@ -1941,7 +1943,7 @@ void ROOTSCOPE::Expand_dlg( ) {
         for( int i=1; i <= fPadTotalN; i++ ) {
             c1->cd(i);
             Get_histo_by_padnum(i)->GetXaxis()->SetRangeUser( xMin, xMax);
-            Get_histo_by_padnum(i)->Draw();
+            Get_histo_by_padnum(i)->Draw( fH1DrawOption.Data() );
         }
         c1->Update();
         c1->cd( fPadActive );
@@ -1964,7 +1966,7 @@ void ROOTSCOPE::Unexpand( ) {
         histo-> GetXaxis()-> UnZoom();
         histo-> GetYaxis()-> UnZoom();
         c1->cd( fPadActive );
-        histo->Draw();
+        histo->Draw( fH1DrawOption.Data() );
         c1->Update();
     }
 
@@ -1977,7 +1979,7 @@ void ROOTSCOPE::Unexpand( ) {
             c1->cd(i);
             Get_histo_by_padnum(i)->GetXaxis()->UnZoom();
             Get_histo_by_padnum(i)->GetYaxis()->UnZoom();
-            Get_histo_by_padnum(i)->Draw();
+            Get_histo_by_padnum(i)->Draw( fH1DrawOption.Data() );
         }
         c1->Update();
         c1->cd( fPadActive );
@@ -2136,7 +2138,7 @@ void ROOTSCOPE::Rebin_compress() {
         histo->Rebin( fCmp );
         histo->GetXaxis()->SetRangeUser( x1, x2 );
         c1->cd( fPadActive);
-        histo->Draw();
+        histo->Draw( fH1DrawOption.Data() );
         c1->Update();
     }
 
@@ -2156,7 +2158,7 @@ void ROOTSCOPE::Rebin_compress() {
             c1->cd(i);
             Get_histo_by_padnum(i)->Rebin( fCmp );
             Get_histo_by_padnum(i)->GetXaxis()->SetRangeUser( x1, x2 );
-            Get_histo_by_padnum(i)->Draw(); }
+            Get_histo_by_padnum(i)->Draw( fH1DrawOption.Data() ); }
 
         c1->Update();
         c1->cd( fPadActive );
@@ -2210,7 +2212,7 @@ void ROOTSCOPE::Rebin_uncompress() {
         histo->Rebin( fCmp );
         histo->GetXaxis()->SetRangeUser( x1, x2 );
         c1->cd( fPadActive);
-        histo->Draw();
+        histo->Draw( fH1DrawOption.Data() );
         c1->Update();
     }
 
@@ -2231,7 +2233,7 @@ void ROOTSCOPE::Rebin_uncompress() {
             c1->cd(i);
             Get_histo_by_padnum(i)->Rebin( fCmp );
             Get_histo_by_padnum(i)->GetXaxis()->SetRangeUser( x1, x2 );
-            Get_histo_by_padnum(i)->Draw(); }
+            Get_histo_by_padnum(i)->Draw( fH1DrawOption.Data() ); }
 
         c1->Update();
         c1->cd( fPadActive );
@@ -2293,7 +2295,7 @@ void ROOTSCOPE::Go_half_left( ) {
         {
             // only shift the histo in the selected pad.
             histo->GetXaxis()->SetRangeUser( next_xL, next_xR);
-            histo->Draw();
+            histo->Draw( fH1DrawOption.Data() );
             c1->Update();
         }
 
@@ -2305,7 +2307,7 @@ void ROOTSCOPE::Go_half_left( ) {
             for( int i=1; i <= fPadTotalN; i++ ) {
                 c1->cd(i);
                 Get_histo_by_padnum(i)->GetXaxis()->SetRangeUser( next_xL, next_xR);
-                Get_histo_by_padnum(i)->Draw();
+                Get_histo_by_padnum(i)->Draw( fH1DrawOption.Data() );
             }
             c1->Update();
             c1->cd( fPadActive );
@@ -2381,7 +2383,7 @@ void ROOTSCOPE::Go_half_right( ) {
         {
             // only shift the histo in the selected pad.
             histo->GetXaxis()->SetRangeUser( next_xL, next_xR);
-            histo->Draw();
+            histo->Draw( fH1DrawOption.Data() );
             c1->Update();
         }
 
@@ -2393,7 +2395,7 @@ void ROOTSCOPE::Go_half_right( ) {
             for( int i=1; i <= fPadTotalN; i++ ) {
                 c1->cd(i);
                 Get_histo_by_padnum(i)->GetXaxis()->SetRangeUser( next_xL, next_xR);
-                Get_histo_by_padnum(i)->Draw();
+                Get_histo_by_padnum(i)->Draw( fH1DrawOption.Data() );
             }
             c1->Update();
             c1->cd( fPadActive );
@@ -2584,7 +2586,7 @@ void ROOTSCOPE::To_display_histos( bool showMSG  ){
 
         c1->SetMargin( 0.05, 0.05, 0.1, 0.1);
         c1->cd();
-        histos.at( fOpen_list.at(0) )->Draw();
+        histos.at( fOpen_list.at(0) )->Draw( fH1DrawOption.Data() );
 
         // in order to skip a mouse clcik to select histo,
         // we have to link histo and set fIsTH2_inPad = false.
@@ -2611,7 +2613,7 @@ void ROOTSCOPE::To_display_histos( bool showMSG  ){
 
             c1->cd( i+1 ); // pad idx starts from 1 ( not 0 )!!!
 
-            histos.at(  fOpen_list.at(i) )->Draw();
+            histos.at(  fOpen_list.at(i) )->Draw( fH1DrawOption.Data() );
 
         }
 
@@ -2867,7 +2869,7 @@ void ROOTSCOPE::_doing_overloap( TH1* h1, TH1* h2,
     c1->Clear();
     c1->cd(0);
 
-    h1->Draw();
+    h1->Draw( fH1DrawOption.Data() );
     h1->SetTitle( Form("To overlap spec%02d with spec%02d", h1Idx+1 , h2Idx+1 ) );
     h1->GetXaxis()->SetRangeUser( x_common_low, x_common_up);
     Float_t h1Uymax = h1->GetMaximum() / 0.9;   // User y max
