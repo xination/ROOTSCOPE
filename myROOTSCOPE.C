@@ -1442,31 +1442,33 @@ void ROOTSCOPE::Get_Sum( bool isTH2 ) {
          // organize the range
         float xMax = Get_Max_range( fH2_pickX[0], fH2_pickX[1] );
         float xMin = Get_Min_range( fH2_pickX[0], fH2_pickX[1] );
-        int binx1 = histo->GetXaxis()-> FindBin(xMin);
-        int binx2 = histo->GetXaxis()-> FindBin(xMax);
+        int binx1 = histo2d->GetXaxis()-> FindBin(xMin);
+        int binx2 = histo2d->GetXaxis()-> FindBin(xMax);
         int binxN = histo2d->GetXaxis()->GetNbins();
 
         float yMax = Get_Max_range( fH2_pickY[0], fH2_pickY[1] );
         float yMin = Get_Min_range( fH2_pickY[0], fH2_pickY[1] );
-        int biny1 = histo->GetYaxis()-> FindBin(yMin);
-        int biny2 = histo->GetYaxis()-> FindBin(yMax);
+        int biny1 = histo2d->GetYaxis()-> FindBin(yMin);
+        int biny2 = histo2d->GetYaxis()-> FindBin(yMax);
         int binyN = histo2d->GetYaxis()->GetNbins();
 
+       
         if( (xMax != xMin) || (yMax != yMin) )
         {
 
-            Int_t counts = 0;
+            Double_t counts = 0;
 
             for( Int_t i =binx1; i<binx2; i++ ){
             for( Int_t j =biny1; j<biny2; j++ ){
 
-                 counts +=  histo2d-> GetBinContent( i, j );
+                counts +=  histo2d-> GetBinContent( i, j );
+                // note: 
             }}
 
             *fText_viewer
             << Form("\nsum over region x [ %.1f to %.1f], y [ %.1f to %.1f ] -- x,y total binN = %d, %d\n",
             xMin, xMax, yMax, yMin, binxN, binyN );
-            *fText_viewer<<Form("Counts = %d in the selected region.\n", counts );
+            *fText_viewer<<Form("Content = %.f in the selected region.\n", counts );
             fText_viewer->ShowBottom();
         }
 
