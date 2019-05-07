@@ -1,7 +1,7 @@
 //
 //   Author : Pei-Luan Tai
 //   Contact: pt10f@my.fsu.edu
-//   Last update: Feb 7 2018
+//   Last update: May 7 2019
 //***************************************/
 #include "myDialog.h"
 #include "myDialog_2D.h"
@@ -4618,6 +4618,7 @@ void ROOTSCOPE::SetTwoDHisto( TH2* h2d_input) {
     histo2d = h2d_input;
     histo2d_backup = (TH2*) h2d_input->Clone();
     fHasTH2 = true;
+    histo2ds.push_back( histo2d );
     *fText_viewer <<"Load a 2d histogram" << endl;
     fText_viewer->ShowBottom();
 
