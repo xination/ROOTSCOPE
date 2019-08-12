@@ -59,6 +59,8 @@ private:
     float   fGeneral_pick1;             /* multi-purpose */
     float   fGeneral_pick2;             /* multi-purpose */
 
+    float  fGeneral_pickn[npeaks];
+
     float   fBG_const;                  /* bg value, const term */
     float   fBG_linear;                 /* bg value, linear term */
 
@@ -83,6 +85,8 @@ private:
     TLine*  general_line1;
     TLine*  general_line2;
 
+    TLine*  general_linen[npeaks];
+
     Int_t   fH1_fillstyle;               /* fill style */
     Int_t   fH1_linewidth;               /* line width */
 
@@ -94,7 +98,6 @@ private:
     TSpectrum*      peakFinder;
     Float_t         fSigma_guess;       /* parameters for finding peaks*/
     Float_t         fThreshold;         /* parameters for finding peaks*/
-
 
 
     //---------------for 2d histo----------------------------//
@@ -146,7 +149,7 @@ private:
     TF1*    fTF1_gaus_bg;               /* y = guas(x) + a*x + c */
     TF1*    fTF1_gaus_bg_2;
     TF1*    fTF1_double_gaus_bg;
-
+    TF1*    fTF1_n_gaus_bg;
 
     //---------------others-----------------------------------//
 
@@ -173,6 +176,8 @@ private:
     void SetMarker2(Event_t*);
 
     void SetGeneralMarker(Event_t*);
+
+    void SetGeneralMarkerN(Event_t*);
 
     void Clear_Marker();
 
@@ -228,6 +233,8 @@ private:
     void Fit_Gaussian();
 
     void Fit_Double_Gaussian();
+
+    void Fit_N_Gaussian();
 
     void Fit_Background();       // for bg = const
 
@@ -434,7 +441,8 @@ void ROOTSCOPE::To_response(Event_t* e) {
 
         // ctl + right click.
         if ( e->fType == kButtonPress && e->fCode == kButton1Down && isCtrl && !isAlt   )
-        { SetGeneralMarker( e ); }
+        //{ SetGeneralMarker( e ); }
+	{ SetGeneralMarkerN( e ); }
 
         //  for key press test
         //  cout << "test e->fCode = "<< e->fCode << endl;
@@ -484,6 +492,8 @@ void ROOTSCOPE::To_response(Event_t* e) {
             else if( key_symbol == kKey_g )  { Fit_Gaussian( ); }
 
             else if( key_symbol == kKey_G )  { Fit_Double_Gaussian( ); }
+
+	    else if( key_symbol == kKey_T )  { Fit_N_Gaussian( ); }
 
             else if( key_symbol == kKey_s )  { Get_Sum( 0 ); }
 
@@ -661,6 +671,9 @@ void ROOTSCOPE::SetGeneralMarker( Event_t* e) {
     float x_pos = histo-> GetXaxis()-> GetBinCenter( binx );
     float y_pos1 =  currentPad->GetUymin();
     float y_pos2 =  currentPad->GetUymax();
+    Int_t logyval = currentPad->GetLogy();
+    if(logyval==1) y_pos2 =  pow(10,currentPad->GetUymax()); //if logscale
+
 
     if  ( x_pos != fGeneral_pick1 )
     {
@@ -677,8 +690,47 @@ void ROOTSCOPE::SetGeneralMarker( Event_t* e) {
     c1->Update();
 }
 
+void ROOTSCOPE::SetGeneralMarkerN( Event_t* e) {
+
+
+    TVirtualPad* currentPad = c1->GetClickSelectedPad();
+
+    int   px = e->fX;
+    float xx = currentPad->AbsPixeltoX(px);
+    int binx = histo->GetXaxis()-> FindBin(xx);
+
+    float x_pos = histo-> GetXaxis()-> GetBinCenter( binx );
+    float y_pos1 =  currentPad->GetUymin();
+    float y_pos2 =  currentPad->GetUymax();
+    Int_t logyval = currentPad->GetLogy();
+    if(logyval==1) y_pos2 =  pow(10,currentPad->GetUymax()); //if logscale
+
+
+    if  ( x_pos != fGeneral_pickn[0] && x_pos != fGeneral_pickn[1] )
+    {
+	
+	for(int p = npeaks-1; p>0; p--){
+		fGeneral_pickn[p] = fGeneral_pickn[p-1];	
+		}	
+	fGeneral_pickn[0] = x_pos;
+        currentPad->cd();
+	
+	for(int p = 0; p<npeaks; p++){
+        	if(p==0) Set_Line( general_linen[p], x_pos, y_pos1, x_pos, y_pos2 );
+		else Set_Line( general_linen[p], fGeneral_pickn[p], y_pos1, fGeneral_pickn[p], y_pos2 );
+        
+        	general_linen[p]->Draw();
+	}	
+    }
+
+    c1->Update();
+}
+
+
 
 void ROOTSCOPE::SetMarker(Event_t* e){
+
+	
 
     //------------------------------------------------------------------| get x_pos, y_pos.
     TVirtualPad* currentPad = c1->GetClickSelectedPad();
@@ -687,9 +739,10 @@ void ROOTSCOPE::SetMarker(Event_t* e){
     Float_t xx = currentPad->AbsPixeltoX(px);
     Int_t binx = histo->GetXaxis()-> FindBin(xx);
 
+    Int_t logyval = currentPad->GetLogy();
     Float_t x_pos = histo-> GetXaxis()-> GetBinCenter( binx );
     Float_t y_pos =  currentPad->GetUymax();
-
+    if(logyval==1) y_pos =  pow(10,currentPad->GetUymax());
 
 
 
@@ -1089,6 +1142,13 @@ void ROOTSCOPE::Initialization() {
     general_line2->SetLineColor( kGreen );
     general_line2->SetLineStyle( 2 );
 
+    for(int p=0;p<npeaks;p++){
+	general_linen[p] = new TLine();
+    	general_linen[p]->SetLineColor( kRed );
+    	general_linen[p]->SetLineStyle( 2 );
+	}
+
+
     ftemp_lineN = 10;
     for( int i=0; i< ftemp_lineN; i++ ) { fTmpSet1_lines[i] = new TLine(); }
     for( int i=0; i< ftemp_lineN; i++ ) { fTmpSet2_lines[i] = new TLine(); }
@@ -1097,6 +1157,7 @@ void ROOTSCOPE::Initialization() {
     fXrange_pick2 = 0;
     fGeneral_pick1 = 0;
     fGeneral_pick2 = 0;
+    for(int p=0;p<npeaks;p++) fGeneral_pickn[p] = 0;
 
     for( int i=0; i<2; i++ ) {
         fH2_marker_setA[i] = new TLine(); fH2_marker_setB[i] = new TLine();
@@ -1124,6 +1185,14 @@ void ROOTSCOPE::Initialization() {
     fTF1_double_gaus_bg
     = new TF1( "double_gauss_bg", double_gauss_bg, fXrange_pick1, fXrange_pick2, 8 );
     fTF1_double_gaus_bg->SetNpx( 500 );
+
+
+    
+    fTF1_n_gaus_bg
+    = new TF1( "n_gauss_bg", n_gauss_bg, fXrange_pick1, fXrange_pick2, 3*npeaks+2 );
+    fTF1_n_gaus_bg->SetNpx( 500 );
+
+
 
     gStyle->SetOptStat(kFALSE);
 }
@@ -1594,7 +1663,7 @@ void ROOTSCOPE::Fit_Gaussian() {
 
         //fTF1_gaus_bg->SetParLimits  ( 3, init_c*0.95, init_c*1.05);
 
-        histo->Fit( fTF1_gaus_bg, "MQNB", "", xMin, xMax  ); // B = to set boundary.
+        histo->Fit( fTF1_gaus_bg, "MNB", "", xMin, xMax  ); // B = to set boundary.
 
 
 
@@ -1779,7 +1848,7 @@ void ROOTSCOPE::Fit_Double_Gaussian() {
         fTF1_double_gaus_bg->SetParLimits ( 2, 0, init_h1*2);// height1
         fTF1_double_gaus_bg->SetParLimits ( 3, xMin, xMax ); // center1
         fTF1_double_gaus_bg->SetParLimits ( 4, init_sigma1*0.01, init_sigma1*3 );
-        fTF1_double_gaus_bg->SetParLimits ( 5, 0, init_h1*2); // height2
+        fTF1_double_gaus_bg->SetParLimits ( 5, 0, init_h2*2); // height2
         fTF1_double_gaus_bg->SetParLimits ( 6, xMin, xMax );  // center2
         fTF1_double_gaus_bg->SetParLimits ( 7, init_sigma2*0.01, init_sigma2*3 );
 
@@ -1866,6 +1935,152 @@ void ROOTSCOPE::Fit_Double_Gaussian() {
 	}
 
 
+    }
+
+}
+
+
+
+void ROOTSCOPE::Fit_N_Gaussian() {
+
+ // organize the range
+    float xMax = Get_Max_range( fXrange_pick1, fXrange_pick2 );
+    float xMin = Get_Min_range( fXrange_pick1, fXrange_pick2 );
+
+    Bool_t isNoValues = false;
+    Float_t init_h[npeaks] = {0};
+    Float_t init_c[npeaks] = {0};
+    Float_t init_sigma[npeaks] = {0};
+
+
+    // to ensure we have a proper range.
+    if( xMax != xMin )
+    {
+
+        // use ctl+mouse right click to set up
+	for (Int_t p=0;p<npeaks;p++) {
+      	    init_c[p]  = fGeneral_pickn[p];
+	    init_h[p] =  histo-> GetBinContent( histo->FindBin( fGeneral_pickn[p] ) );
+	    init_sigma[p] = 0.2;
+   	    }
+        
+        if( init_c[0]==0 && init_c[1]==0 && init_c[2]==0 ) { isNoValues = true; }
+    }
+
+
+    if( !isNoValues && (xMax != xMin) ){
+
+        Clear_Marker();
+
+	Double_t param[30];
+	param[0] = fBG_const;
+	param[1] = fBG_linear;
+
+	for (int p=0;p<npeaks;p++) {
+      		param[3*p+2] = init_h[p];
+      		param[3*p+3] = init_c[p];
+      		param[3*p+4] = init_sigma[p];
+   		}
+
+        fTF1_n_gaus_bg->SetParameters(param);
+
+	fTF1_n_gaus_bg->FixParameter ( 0, fBG_const  );
+        fTF1_n_gaus_bg->FixParameter ( 1, fBG_linear );
+
+	for (int p=0;p<npeaks;p++) {
+		fTF1_n_gaus_bg->SetParLimits ( 3*p+2, 0, init_h[p]*2);// height
+		fTF1_n_gaus_bg->SetParLimits ( 3*p+3, xMin, xMax ); // center
+		fTF1_n_gaus_bg->SetParLimits ( 3*p+4, init_sigma[p]*0.01, init_sigma[p]*3 );	
+   		}
+
+
+        histo->Fit( fTF1_n_gaus_bg, "MB", "", xMin, xMax  );
+
+        float lower_limit = histo->GetXaxis()->GetXmin();
+        float upper_limit = histo->GetXaxis()->GetXmax();
+        fTF1_n_gaus_bg->SetRange( lower_limit, upper_limit );
+        fTF1_n_gaus_bg->SetLineWidth(3);
+	fTF1_n_gaus_bg->SetLineColor(kMagenta);
+        fTF1_n_gaus_bg->Draw("same");
+
+	fTF1_gaus_bg->SetLineColor(kRed-3);
+	fTF1_gaus_bg->SetRange( lower_limit, upper_limit );
+	fTF1_gaus_bg->SetParameter ( 0, fBG_const  );
+	fTF1_gaus_bg->SetParameter ( 1, fBG_linear );
+	fTF1_gaus_bg->SetLineWidth(1);
+	
+	for (int p=0;p<npeaks;p++) {
+		fTF1_gaus_bg->SetParameter( 2,  fTF1_n_gaus_bg->GetParameter(3*p+2) );// height
+		fTF1_gaus_bg->SetParameter( 3,  fTF1_n_gaus_bg->GetParameter(3*p+3) ); // center
+		fTF1_gaus_bg->SetParameter( 4,  fTF1_n_gaus_bg->GetParameter(3*p+4) ); // sigma
+		fTF1_gaus_bg->DrawCopy("same");
+   		}
+
+	
+	fTF1_bg_linear->SetLineColor(kGreen+3);
+	fTF1_bg_linear->SetRange( lower_limit, upper_limit );
+	fTF1_bg_linear->SetParameter ( 0, fBG_const  );
+	fTF1_bg_linear->SetParameter ( 1, fBG_linear );
+	fTF1_bg_linear->DrawCopy("same");
+        c1->Update();
+
+
+        // -----------------------------------------------| show message
+
+	for (int p=0;p<npeaks;p++) {
+		float area = TMath::Sqrt( 2 * TMath::Pi() ) * fTF1_n_gaus_bg->GetParameter(3*p+2) * fTF1_n_gaus_bg->GetParameter(3*p+4);
+		cout<<"************  Peak "<<p+1<<" ************"<<endl;
+		cout<<"Centroid:  "<<fTF1_n_gaus_bg->GetParameter(3*p+3)<<endl;
+		cout<<"Counts:  "<<area/histo->GetBinWidth(1)<<endl;
+		cout<<"Area:  "<<area<<endl;
+		cout<<"FWHM:  "<<fTF1_n_gaus_bg->GetParameter(3*p+4)*2.35482<<endl;
+		cout<<endl;
+   		}
+
+	/*
+        float area1 = TMath::Sqrt( 2 * TMath::Pi() ) * fitted_h1 * fitted_sigma1;
+        float FWHM1 = 2.35482 * fitted_sigma1;
+
+        float area2 = TMath::Sqrt( 2 * TMath::Pi() ) * fitted_h2 * fitted_sigma2;
+        float FWHM2 = 2.35482 * fitted_sigma2;
+
+
+        float chisqr = -0.0;
+         if( fTF1_double_gaus_bg->GetNDF() != 0 ) {
+            chisqr = fTF1_double_gaus_bg->GetChisquare()/fTF1_double_gaus_bg->GetNDF();
+        }
+	// to print the peak in the order of channel ( from small to large )
+	if( fitted_c1 < fitted_c2 ) {
+
+	    *fText_viewer
+            <<
+            Form( "\nPeak1 Center = %5.3f, cnt = %5.2f, FWHM = %5.2f, Area/cmp = %5.2f\n",
+                fitted_c1, area1/histo->GetBinWidth(1), FWHM1, area1/fCmp)
+            <<
+            Form( "Peak2 Center = %5.3f, cnt = %5.2f, FWHM = %5.2f, Area/cmp = %5.2f\n",
+                fitted_c2, area2/histo->GetBinWidth(1), FWHM2, area2/fCmp )
+            <<
+            Form( "Chisqr/N = %5.2f (cmp=%d)", chisqr, fCmp )
+            <<  endl;
+            fText_viewer->ShowBottom();
+
+	}
+	else {
+
+	    *fText_viewer
+            <<
+            Form( "\nPeak1 Center = %5.3f, cnt = %5.2f, FWHM = %5.2f, Area/cmp = %5.2f\n",
+                fitted_c2, area2/histo->GetBinWidth(1), FWHM2, area2/fCmp )
+            <<
+            Form( "Peak2 Center = %5.3f, cnt = %5.2f, FWHM = %5.2f, Area/cmp = %5.2f\n",
+                fitted_c1, area1/histo->GetBinWidth(1), FWHM1, area1/fCmp )
+            <<
+            Form( "Chisqr/N = %5.2f (cmp=%d)", chisqr, fCmp )
+            <<  endl;
+            fText_viewer->ShowBottom();
+	}
+
+	*/
     }
 
 }
@@ -3809,7 +4024,7 @@ void ROOTSCOPE::Projection_2d( bool flagXY, bool toShow = true ){
     {
         pHisto_name  = Form("[%d] gate_X_%.1f_%.1f", histo2d_num, xMin, xMax );
         pHisto_title = Form("[%d] gate on X: %.1f to %.1f",histo2d_num, xMin, xMax );
-        pHisto = histo2d->ProjectionY( pHisto_name.Data(), binx1, binx2 );
+        pHisto = histo2d->ProjectionY( pHisto_name.Data(), binx1, binx2, "o" );
         pHisto->SetTitle( pHisto_title.Data() );
         histos.push_back( pHisto );
         *fText_viewer <<
@@ -3822,7 +4037,7 @@ void ROOTSCOPE::Projection_2d( bool flagXY, bool toShow = true ){
     {
         pHisto_name  = Form("[%d] gating_Y_%.1f_%.1f",histo2d_num, yMin, yMax );
         pHisto_title = Form("[%d] gate on Y: %.1f to %.1f",histo2d_num, yMin, yMax );
-        pHisto = histo2d->ProjectionX( pHisto_name.Data(), biny1, biny2 );
+        pHisto = histo2d->ProjectionX( pHisto_name.Data(), biny1, biny2, "o" );
         pHisto->SetTitle( pHisto_title.Data() );
         histos.push_back( pHisto );
         *fText_viewer <<
