@@ -242,6 +242,8 @@ private:
 
     void Set_Background();
 
+    void Set_Linear_Background();
+
     void Get_Sum( bool isTH2  ); // for both 1d and 2d
 
     void To_show_AddSub_gate_dlg();
@@ -513,6 +515,8 @@ void ROOTSCOPE::To_response(Event_t* e) {
             else if( key_symbol == kKey_F3  ) { To_set_logscale(); }
 
 	    else if( key_symbol == kKey_0 )  { Reset_Functions( ); }
+
+	    else if( key_symbol == kKey_l )  { Set_Linear_Background(); }
 
         }
 
@@ -1763,6 +1767,31 @@ void ROOTSCOPE::Set_Background() {
 
     To_Draw_bg();
 }
+
+void ROOTSCOPE::Set_Linear_Background() {
+
+    fBG_linear = 0; // reset
+    fBG_const  = 0;
+
+ // organize the range
+    float xMax = Get_Max_range( fXrange_pick1, fXrange_pick2 );
+    float xMin = Get_Min_range( fXrange_pick1, fXrange_pick2 );
+    float yMax  = histo-> GetBinContent( histo->FindBin( xMax ) );
+    float yMin  = histo-> GetBinContent( histo->FindBin( xMin ) );
+
+    // to ensure we have a proper range.
+    if( xMax != xMin )
+    {
+        
+        
+        fBG_linear = (yMax - yMin)/(xMax - xMin) ;
+	fBG_const  = -1*fBG_linear*xMin + yMin;
+	fTF1_bg_linear->SetParameter(0, fBG_const);
+	fTF1_bg_linear->SetParameter(1, fBG_linear);
+        To_Draw_bg();
+    }
+}
+
 
 
 void ROOTSCOPE::To_Draw_bg() {
