@@ -248,6 +248,7 @@ private:
 
     void Project_from_1d( bool flagXY );
 
+   void Reset_Functions(  );
 
     //-------------------------------------- 2d histo
 
@@ -510,6 +511,8 @@ void ROOTSCOPE::To_response(Event_t* e) {
             else if( key_symbol == kKey_F2  ) { To_change_linewidth(); }
 
             else if( key_symbol == kKey_F3  ) { To_set_logscale(); }
+
+	    else if( key_symbol == kKey_0 )  { Reset_Functions( ); }
 
         }
 
@@ -1812,10 +1815,16 @@ void ROOTSCOPE::Fit_Double_Gaussian() {
     {
 
         // use ctl+mouse right click to set up
-        init_c1 =  fGeneral_pick1;
+        /*init_c1 =  fGeneral_pick1;
         init_c2 =  fGeneral_pick2;
         init_h1 = histo-> GetBinContent( histo->FindBin( fGeneral_pick1 ) );
-        init_h2 = histo-> GetBinContent( histo->FindBin( fGeneral_pick2 ) );
+        init_h2 = histo-> GetBinContent( histo->FindBin( fGeneral_pick2 ) );*/
+	
+	init_c1 =  fGeneral_pickn[0];
+        init_c2 =  fGeneral_pickn[1];
+        init_h1 = histo-> GetBinContent( histo->FindBin( fGeneral_pickn[0] ) );
+        init_h2 = histo-> GetBinContent( histo->FindBin( fGeneral_pickn[1] ) );
+	
 
         Dlg_double_gaussian* get_initial_valuse
         = new Dlg_double_gaussian(  gClient->GetRoot(),
@@ -1932,7 +1941,23 @@ void ROOTSCOPE::Fit_Double_Gaussian() {
             Form( "Chisqr/N = %5.2f (cmp=%d)", chisqr, fCmp )
             <<  endl;
             fText_viewer->ShowBottom();
+
 	}
+
+
+	cout<<"************  Peak "<<1<<" ************"<<endl;
+	cout<<"Centroid:  "<<fitted_c1<<endl;
+	cout<<"Counts:  "<<area1/histo->GetBinWidth(1)<<endl;
+	cout<<"Area:  "<<area1<<endl;
+	cout<<"FWHM:  "<<FWHM1<<endl;
+	cout<<endl;
+
+	cout<<"************  Peak "<<2<<" ************"<<endl;
+	cout<<"Centroid:  "<<fitted_c2<<endl;
+	cout<<"Counts:  "<<area2/histo->GetBinWidth(1)<<endl;
+	cout<<"Area:  "<<area2<<endl;
+	cout<<"FWHM:  "<<FWHM2<<endl;
+	cout<<endl;
 
 
     }
@@ -2082,6 +2107,45 @@ void ROOTSCOPE::Fit_N_Gaussian() {
 
 	*/
     }
+
+}
+
+
+
+void ROOTSCOPE::Reset_Functions() {
+
+	fBG_const = 0;
+	fBG_linear = 0;
+	Double_t param[30] = {0};
+	fTF1_n_gaus_bg->SetParameters(param);
+	fTF1_double_gaus_bg->SetParameters(param);
+	fTF1_gaus_bg->SetParameters(param);
+
+	// hide the line makers, and clear the fitting lines.
+
+    Set_Line( myline1, 0, 0, 0 ,0 ); myline1->Draw();
+    Set_Line( myline2, 0, 0, 0 ,0 ); myline2->Draw();
+
+    if ( fPadTotalN > 1 ) {
+
+        TH1* htest1;
+        for( int i=1; i<= fPadTotalN; i++ ) {
+            c1->cd(i);
+            Set_Line( fTmpSet1_lines[i], 0, 0, 0 ,0 );
+            Set_Line( fTmpSet2_lines[i], 0, 0, 0 ,0 );
+            fTmpSet1_lines[i]->Draw();
+            fTmpSet2_lines[i]->Draw();
+            Get_histo_by_padnum( i )->Draw();
+            c1->GetPad(i)->Update();
+        }
+    }
+
+
+    c1->cd( fPadActive);
+    histo->Draw( fH1DrawOption.Data() );
+    c1->Update();
+
+	
 
 }
 
