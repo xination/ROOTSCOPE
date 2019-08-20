@@ -1486,29 +1486,40 @@ void ROOTSCOPE::Get_Sum( bool isTH2 ) {
         int     counts = 0;
         float dX   =histo->GetXaxis()->GetBinWidth(1);
 
-        for( Int_t i =binx1; i<binx2; i++ ){
+        for( Int_t i =binx1+1; i<binx2; i++ ){
              float height = histo-> GetBinContent( i );
              area += ( height * dX );
 
              float bgValue
              = fBG_const + fBG_linear * histo->GetXaxis()->GetBinCenter(i);
 
-            if( height > bgValue) { counts += height; }
+            if( height > bgValue) { counts += (height - bgValue); }
         }
 
-        float y1 = fBG_const + fBG_linear * xMin;
-        float y2 = fBG_const + fBG_linear * xMax;
-        float  w = xMax - xMin;
+        float y1 = fBG_const + fBG_linear * (xMin + 0.5*histo->GetBinWidth(1));
+        float y2 = fBG_const + fBG_linear * (xMax - 0.5*histo->GetBinWidth(1));
+        float  w = xMax - xMin - histo->GetBinWidth(1);
+	float area_bg = 0;
+	if(y2>=y1) area_bg = 0.5*w*(y2-y1) + y1*w;
+	else area_bg = 0.5*w*(y1-y2) + y2*w;
 
-        float area_bg = 0.5 * w * ( y1 + y2 );
+        //float area_bg = 0.5 * w * ( y1 + y2 );
 
-        area = area - area_bg;
+        double area_less_bg = area - area_bg;
+
+	//cout<<xMin<<"  "<<y1<<"  "<<xMax<<"  "<<y2<<endl;
 
         *fText_viewer
         << Form("\nsum over the range %.1f to %.1f (binwidth = %.2f total bin = %d)\n" , xMin, xMax, histo->GetBinWidth(1), histo->GetNbinsX() )
         << Form("area/cmp = %.1f (bg = %.f, cmp = %d). \n",  area/fCmp, area_bg, fCmp)
         << Form("We have %d counts above bg.", counts)  <<  endl;
         fText_viewer->ShowBottom();
+
+	cout<<"*****************Area and sum over selected range*****************"<<endl;
+	cout<<"Sum from "<<xMin+ 0.5*histo->GetBinWidth(1)<<" to  "<<xMax- 0.5*histo->GetBinWidth(1)<<"  (binwidth = "<<histo->GetBinWidth(1)<<"  , total bins = "<<histo->GetNbinsX()<<")"<<endl;
+	cout<<"Total area: "<<area<<"     bg area: "<<area_bg<<endl;
+	cout<<"Subtracted area: "<<area_less_bg<<"   Counts: "<<counts<<endl;
+	cout<<endl;
     }
 
 
@@ -1666,7 +1677,7 @@ void ROOTSCOPE::Fit_Gaussian() {
         fTF1_gaus_bg->FixParameter 	( 1, fBG_linear );
         fTF1_gaus_bg->SetParLimits  ( 2, init_h*0.50, init_h*1.50);
         fTF1_gaus_bg->SetParLimits  ( 3, xMin, xMax ); // center
-        fTF1_gaus_bg->SetParLimits  ( 4, init_sigma*0.01, init_sigma*1.5 );
+        fTF1_gaus_bg->SetParLimits  ( 4, init_sigma*0.01, init_sigma*10 );
 
         //fTF1_gaus_bg->SetParLimits  ( 3, init_c*0.95, init_c*1.05);
 
@@ -1703,6 +1714,15 @@ void ROOTSCOPE::Fit_Gaussian() {
             Form( "\nCenter = %5.3f, cnt = %5.2f FWHM = %7.4f, Chisqr/N = %5.2f, Area/cmp = %5.2f (cmp=%d)\n",
             fitted_c, area/histo->GetBinWidth(1), FWHM, chisqr, area/fCmp, fCmp ) <<  endl;
         fText_viewer->ShowBottom();
+
+
+	cout<<"************  Peak "<<1<<" ************"<<endl;
+	cout<<"Centroid:  "<<fitted_c<<endl;
+	cout<<"Counts:  "<<area/histo->GetBinWidth(1)<<endl;
+	cout<<"Area:  "<<area<<endl;
+	cout<<"FWHM:  "<<FWHM<<endl;
+	cout<<endl;
+
 
     }
 
@@ -1885,13 +1905,13 @@ void ROOTSCOPE::Fit_Double_Gaussian() {
         fTF1_double_gaus_bg->FixParameter ( 1, fBG_linear );
         fTF1_double_gaus_bg->SetParLimits ( 2, 0, init_h1*2);// height1
         fTF1_double_gaus_bg->SetParLimits ( 3, xMin, xMax ); // center1
-        fTF1_double_gaus_bg->SetParLimits ( 4, init_sigma1*0.01, init_sigma1*3 );
+        fTF1_double_gaus_bg->SetParLimits ( 4, init_sigma1*0.01, init_sigma1*10 );
         fTF1_double_gaus_bg->SetParLimits ( 5, 0, init_h2*2); // height2
         fTF1_double_gaus_bg->SetParLimits ( 6, xMin, xMax );  // center2
-        fTF1_double_gaus_bg->SetParLimits ( 7, init_sigma2*0.01, init_sigma2*3 );
+        fTF1_double_gaus_bg->SetParLimits ( 7, init_sigma2*0.01, init_sigma2*10 );
 
 
-        histo->Fit( fTF1_double_gaus_bg, "MQNB", "", xMin, xMax  );
+        histo->Fit( fTF1_double_gaus_bg, "MNB", "", xMin, xMax  );
 
         float lower_limit = histo->GetXaxis()->GetXmin();
         float upper_limit = histo->GetXaxis()->GetXmax();
@@ -2044,7 +2064,7 @@ void ROOTSCOPE::Fit_N_Gaussian() {
 	for (int p=0;p<npeaks;p++) {
 		fTF1_n_gaus_bg->SetParLimits ( 3*p+2, 0, init_h[p]*2);// height
 		fTF1_n_gaus_bg->SetParLimits ( 3*p+3, xMin, xMax ); // center
-		fTF1_n_gaus_bg->SetParLimits ( 3*p+4, init_sigma[p]*0.01, init_sigma[p]*3 );	
+		fTF1_n_gaus_bg->SetParLimits ( 3*p+4, init_sigma[p]*0.01, init_sigma[p]*10 );	
    		}
 
 
@@ -2169,6 +2189,12 @@ void ROOTSCOPE::Reset_Functions() {
         }
     }
 
+   // reset markers
+    for(int p = 0; p<npeaks; p++){
+		fGeneral_pickn[p] = 0;
+	}
+    fGeneral_pick1 = 0;
+    fGeneral_pick2 = 0;
 
     c1->cd( fPadActive);
     histo->Draw( fH1DrawOption.Data() );
