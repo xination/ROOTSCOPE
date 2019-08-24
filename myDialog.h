@@ -1,7 +1,7 @@
 //
 //   Author : Pei-Luan Tai
 //   Contact: pt10f@my.fsu.edu
-//   Last update: Dec 3, 2017
+//   Last update: Aug 24, 2019
 //***************************************/
 #include <vector>
 #include <TH1.h>
@@ -2483,7 +2483,271 @@ Dlg_double_gaussian::Dlg_double_gaussian(   const TGWindow* p,
 ///////////////////////////////////////////////////////////////////////////////
 
 
+ 
 
+// use this class to handle the initial condition.
+class Dlg_N_gaussian: public TGMainFrame {
+
+    float*  fPeaks_h;
+    float*  fPeaks_center;
+    float*  fPeaks_sigma;
+    float*  fInitValue;
+    int     fNpeaks;
+
+
+    Bool_t  firstTime;
+    Int_t   tabSwitch;
+
+    TGVerticalFrame*    fVF;
+    TGLabel*            fLabel_header[4];
+   
+    TGLabel**           fLabel_peaks;
+    TGNumberEntry**     fEntry_peaks;
+    TString*            fPeaksString;
+
+    TGHorizontalFrame*  fHF_btns;
+    TGTextButton*       fBtn_close;
+    TGTextButton*       fBtn_cancel;
+
+
+
+public:
+
+    // class constructor
+   Dlg_N_gaussian( const TGWindow* p,
+                        float*  peaks_h,
+                        float*  peaks_center,
+                        float*  peaks_sigma,
+                        int     npeaks );
+
+    void    To_switch_tab();
+
+    void    To_response_key( Event_t* );
+
+    // void    To_focus_on_entry( Event_t* );
+
+    void    Cancel();
+
+    void    CloseWindow();
+
+    void    Update_values();
+
+};
+
+
+void Dlg_N_gaussian::To_switch_tab(){
+
+    int itemN = 3 * fNpeaks;
+
+    if( tabSwitch == -1 ){ tabSwitch = itemN-1; }
+    if( tabSwitch % itemN  ==0 && tabSwitch > 0 ) { 
+        tabSwitch=0; 
+    } // to reset.
+
+    // int peakIdx = tabSwitch / 3;
+    // int itemIdx = tabSwitch % fNpeaks;
+
+    fEntry_peaks[tabSwitch]->GetNumberEntry()->SetFocus();
+    fEntry_peaks[tabSwitch]->GetNumberEntry()->SelectAll();
+}
+
+
+
+void Dlg_N_gaussian::Update_values( ){
+
+    for( int i =0; i<fNpeaks; i++ ){
+        fPeaks_h[i]      = fEntry_peaks[ 3*i+0 ]->GetNumber();
+        fPeaks_center[i] = fEntry_peaks[ 3*i+1 ]->GetNumber();
+        fPeaks_sigma[i]  = fEntry_peaks[ 3*i+2 ]->GetNumber();
+    }
+
+    CloseWindow();
+}
+
+
+
+void Dlg_N_gaussian::Cancel(){
+
+    for( int i =0; i<fNpeaks; i++ ){
+        fPeaks_h[i]      = 0.;
+        fPeaks_center[i] = 0.;
+        fPeaks_sigma[i]  = 0.;
+    }
+  
+    CloseWindow();
+
+ }
+
+
+void Dlg_N_gaussian::CloseWindow(){
+
+    fBtn_close->SetState(kButtonDisabled); // to avoid double click.
+    fBtn_cancel->SetState(kButtonDisabled);
+    DeleteWindow();
+
+ }
+
+
+// void Dlg_N_gaussian::To_focus_on_entry( Event_t* e) {
+
+    // seeming not working well.. it will frozen...
+//    if( firstTime ) {
+//        fEntry_peak1[0]->GetNumberEntry()->SelectAll();
+//        fEntry_peak1[0]->GetNumberEntry()->SetFocus();
+//
+//        firstTime = false;
+//    }
+// }
+
+
+void Dlg_N_gaussian::To_response_key(Event_t* e) {
+
+    /* using space as the hotkey to finish the input. */
+
+
+    // for key symbol look up.
+    UInt_t key_symbol;
+    char tmp[2];
+    if ( e->fType == kGKeyPress )
+    {  gVirtualX->LookupString( e, tmp,sizeof(tmp), key_symbol ); }
+
+    if ( e->fType == kGKeyPress  )
+    {
+
+        const unsigned key_enter = 36;
+
+        if( key_symbol == kKey_Tab   ) { tabSwitch++; To_switch_tab(); }
+
+        else if( key_symbol ==  kKey_Backtab ) { tabSwitch--; To_switch_tab(); }
+
+        else if( e->fCode == key_enter  )   { Update_values(); }
+
+        else if( key_symbol == kKey_Escape   )  {  CloseWindow(); }
+    }
+}
+
+
+
+
+// class constructor
+Dlg_N_gaussian::Dlg_N_gaussian( const TGWindow* p,
+                                float*  peaks_h,
+                                float*  peaks_center,
+                                float*  peaks_sigma,
+                                int     npeaks  )
+: TGMainFrame(p, 10, 10)
+{
+
+    firstTime       = true;
+    tabSwitch       = 0;
+    fPeaks_h        = peaks_h;
+    fPeaks_center   = peaks_center;
+    fPeaks_sigma    = peaks_sigma;
+    fNpeaks         = npeaks; 
+
+
+    fInitValue = new float [ npeaks*3 ];
+    for( int i = 0; i<npeaks; i++ ){
+        fInitValue[3*i+0] = fPeaks_h[i];
+        fInitValue[3*i+1] = fPeaks_center[i];
+        fInitValue[3*i+2] = fPeaks_sigma[i];
+
+    }
+
+
+    SetCleanup(kDeepCleanup); // important step for closing windows properly.
+
+    TGLayoutHints*  Layout1 = new TGLayoutHints( kLHintsCenterY, 2, 2, 2, 2);
+
+  
+    //=========================================================
+    // using Matrix Layout.
+
+    fVF = new TGVerticalFrame( this, 200, 40);
+
+    Int_t nRow = npeaks + 1; // one for header
+    Int_t nCol = 4;          // peakN, h, c, w.
+    fVF->SetLayoutManager ( new TGMatrixLayout( fVF , nRow, nCol) );
+   
+
+    fLabel_header[0] = new TGLabel( fVF, "peakN " );
+    fLabel_header[1] = new TGLabel( fVF, " height " );
+    fLabel_header[2] = new TGLabel( fVF, " center " );
+    fLabel_header[3] = new TGLabel( fVF, " width " );
+    for( int i=0; i<4; i++ ){
+        fLabel_header[i]->SetTextJustify( kTextCenterX );    
+        fVF->AddFrame( fLabel_header[i], Layout1 );
+    }
+
+    fLabel_peaks = new TGLabel* [npeaks] ;
+    fEntry_peaks = new TGNumberEntry* [ npeaks * 3];
+
+    for( int i=0; i<npeaks; i++ ){
+
+        fLabel_peaks[i] = new TGLabel( fVF, Form( "peak%d",i+1) );  
+        fLabel_peaks[i]->SetTextJustify( kTextCenterX );         
+        fVF->AddFrame( fLabel_peaks[i], Layout1 );   
+
+
+        // number entries
+        for( int j=0; j<3; j++) {
+            
+            int idx = j + 3 * i; 
+            
+            fEntry_peaks[idx]
+            = new TGNumberEntry(    fVF,               // base frame
+                                    fInitValue[idx],   // inital value
+                                    12,                // digit width 
+                                    idx,               // ID 
+                                    TGNumberFormat::kNESRealOne);
+
+            fEntry_peaks[idx]->GetNumberEntry()
+            -> Connect( "ProcessedEvent(Event_t*)",
+                        "Dlg_N_gaussian", this,
+                        "To_response_key(Event_t*)");
+
+            fVF->AddFrame( fEntry_peaks[idx], Layout1 );
+        }
+              
+    }
+ 
+    AddFrame( fVF, Layout1 );
+
+
+
+
+
+    TGLayoutHints*  Layout2 = new TGLayoutHints( kLHintsExpandX, 2, 2, 2, 2);
+    fHF_btns = new TGHorizontalFrame( this , 200, 30);
+
+    //---------------------------------------------------------| Btn for close the window
+
+    fBtn_close = new TGTextButton( fHF_btns, "OK" );
+    fBtn_close -> Connect( "Clicked()", "Dlg_N_gaussian", this, "Update_values()"  );
+    fHF_btns->AddFrame( fBtn_close, Layout2);
+
+    //---------------------------------------------------------| Btn for cancel the change
+    // all h,c,sigma are set to zero.
+    fBtn_cancel = new TGTextButton( fHF_btns, "Cancel" );
+    fBtn_cancel -> Connect( "Clicked()", "Dlg_N_gaussian", this, "Cancel()"  );
+    fHF_btns->AddFrame( fBtn_cancel, Layout2);
+
+    AddFrame( fHF_btns, Layout2);
+
+
+
+
+    SetName("Dlg_N_gaussian");
+    SetWindowName("N Gaussian fit");
+
+    MapSubwindows();
+    Resize( GetDefaultSize() );
+    MapWindow();
+
+    gClient->WaitFor(this);
+}
+
+///////////////////////////////////////////////////////////////////////////////
 
 
 
@@ -2830,6 +3094,8 @@ public:
     void    to_display_histos( TString epr);
 
     void    to_apply_formula( TString epr);
+
+    void    to_set_fitN( TString epr);
 };
 
 
@@ -3557,6 +3823,25 @@ void Dlg_Operation_histos::to_display_histos( TString epr){
 
 }
 
+void Dlg_Operation_histos::to_set_fitN( TString epr ){
+
+    // when we input like "set fitN 3"
+
+     
+
+    TObjArray* tmp_array = epr.Tokenize(" ");
+    Int_t substringN = tmp_array->GetEntries();
+
+    if( substringN < 3 ){
+        *fMessage = "set fitN: 2";
+    } else{
+        // to get the 3rd one.
+        TString s_tmp = ( (TObjString*)tmp_array->At(2) )->GetString();
+        *fMessage = "set fitN:" + s_tmp;
+    }
+
+}
+
 // this function parse the mathematical exprssion for the histogram
 // operations. We will validate the input before apply the expression.
 void Dlg_Operation_histos::Parse_expression( ){
@@ -3577,6 +3862,8 @@ void Dlg_Operation_histos::Parse_expression( ){
     else if( epr.Contains("del") ) { del_spectra( epr ); }
 
     else if( epr.Contains("let") ) { to_apply_formula( epr ); }
+
+    else if( epr.Contains("set") && epr.Contains("fitN")  ) { to_set_fitN( epr ); }
 
     CloseWindow();
 

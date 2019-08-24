@@ -1,1 +1,4 @@
 rootscope_temp.C
+rootfiles/
+demo*.cxx
+log.txt

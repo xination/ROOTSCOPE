@@ -1,12 +1,16 @@
-//
 //   Author : Pei-Luan Tai
 //   Contact: pt10f@my.fsu.edu
-//   Last update: May 7 2019
+//   Last update: Aug 24 2019
+//   
+//   contributions list:
+//   ========================== 
+//   Juan Zamora: N Gaussian fit functionalities.
 //***************************************/
 #include "myDialog.h"
 #include "myDialog_2D.h"
 #include "myUtility.h"
 #include "dev.h"
+
 
 
 #include <RVersion.h>
@@ -59,6 +63,9 @@ private:
     float   fGeneral_pick1;             /* multi-purpose */
     float   fGeneral_pick2;             /* multi-purpose */
 
+    int     fUser_generalN;             /* setting from user. */
+    float   fGeneral_pickn[NPEAKS];     /* used in N-Gaussian fit */
+
     float   fBG_const;                  /* bg value, const term */
     float   fBG_linear;                 /* bg value, linear term */
 
@@ -76,12 +83,14 @@ private:
     Int_t   fOverlaph2Idx;
     Bool_t  fOverlapMode;
     TGaxis* faxis;
-    TString   fH1DrawOption;               /* the 1D histo draw option*/
+    TString fH1DrawOption;               /* the 1D histo draw option*/
 
     TLine*  myline1;                     /* line marker 1 */
     TLine*  myline2;                     /* line marker 2 */
     TLine*  general_line1;
     TLine*  general_line2;
+
+    TLine*  general_linen[NPEAKS];       /* used in N-Gaussian fit */
 
     Int_t   fH1_fillstyle;               /* fill style */
     Int_t   fH1_linewidth;               /* line width */
@@ -94,7 +103,6 @@ private:
     TSpectrum*      peakFinder;
     Float_t         fSigma_guess;       /* parameters for finding peaks*/
     Float_t         fThreshold;         /* parameters for finding peaks*/
-
 
 
     //---------------for 2d histo----------------------------//
@@ -146,7 +154,7 @@ private:
     TF1*    fTF1_gaus_bg;               /* y = guas(x) + a*x + c */
     TF1*    fTF1_gaus_bg_2;
     TF1*    fTF1_double_gaus_bg;
-
+    TF1*    fTF1_n_gaus_bg;             /* used in N-Gaussian fit */
 
     //---------------others-----------------------------------//
 
@@ -172,7 +180,9 @@ private:
 
     void SetMarker2(Event_t*);
 
-    void SetGeneralMarker(Event_t*);
+    void SetGeneralMarker(Event_t*);  // will be replaced by SetGeneralMarkerN
+
+    void SetGeneralMarkerN(Event_t*);
 
     void Clear_Marker();
 
@@ -228,6 +238,10 @@ private:
     void Fit_Gaussian();
 
     void Fit_Double_Gaussian();
+
+    void Fit_N_Gaussian();
+
+    void Set_FitN( unsigned int input ); // set how many Gaussian to fit.
 
     void Fit_Background();       // for bg = const
 
@@ -434,7 +448,9 @@ void ROOTSCOPE::To_response(Event_t* e) {
 
         // ctl + right click.
         if ( e->fType == kButtonPress && e->fCode == kButton1Down && isCtrl && !isAlt   )
-        { SetGeneralMarker( e ); }
+        { SetGeneralMarkerN( e ); }
+        // { SetGeneralMarker( e ); } 
+	   
 
         //  for key press test
         //  cout << "test e->fCode = "<< e->fCode << endl;
@@ -485,6 +501,8 @@ void ROOTSCOPE::To_response(Event_t* e) {
 
             else if( key_symbol == kKey_G )  { Fit_Double_Gaussian( ); }
 
+	        else if( key_symbol == kKey_T )  { Fit_N_Gaussian( ); }   //todo: will be integrated in kKey_G
+
             else if( key_symbol == kKey_s )  { Get_Sum( 0 ); }
 
             else if( key_symbol == kKey_c )  { To_switch_overlap(); }
@@ -500,6 +518,10 @@ void ROOTSCOPE::To_response(Event_t* e) {
             else if( key_symbol == kKey_F2  ) { To_change_linewidth(); }
 
             else if( key_symbol == kKey_F3  ) { To_set_logscale(); }
+
+	        // else if( key_symbol == kKey_0 )  { Reset_Functions( ); }  // newly add
+
+	        // else if( key_symbol == kKey_l )  { Set_Linear_Background(); } // newly add
 
         }
 
@@ -648,7 +670,7 @@ void ROOTSCOPE::To_response(Event_t* e) {
 }
 
 
-
+// this function can be replaced by SetGeneralMarkerN().
 void ROOTSCOPE::SetGeneralMarker( Event_t* e) {
 
 
@@ -661,6 +683,10 @@ void ROOTSCOPE::SetGeneralMarker( Event_t* e) {
     float x_pos = histo-> GetXaxis()-> GetBinCenter( binx );
     float y_pos1 =  currentPad->GetUymin();
     float y_pos2 =  currentPad->GetUymax();
+    
+    if( currentPad->GetLogy() ) 
+    { y_pos2 =  pow(10,currentPad->GetUymax() ); } // for log scale
+
 
     if  ( x_pos != fGeneral_pick1 )
     {
@@ -678,7 +704,52 @@ void ROOTSCOPE::SetGeneralMarker( Event_t* e) {
 }
 
 
+void ROOTSCOPE::SetGeneralMarkerN( Event_t* e) {
+
+
+    TVirtualPad* currentPad = c1->GetClickSelectedPad();
+
+    int   px = e->fX;
+    float xx = currentPad->AbsPixeltoX(px);
+    int binx = histo->GetXaxis()-> FindBin(xx);
+
+    float x_pos = histo-> GetXaxis()-> GetBinCenter( binx );
+    float y_pos1 =  currentPad->GetUymin();
+    float y_pos2 =  currentPad->GetUymax();
+    
+    if( currentPad->GetLogy() ) 
+    { y_pos2 =  pow(10,currentPad->GetUymax() ); } // for log scale
+
+    // for update the lines.
+    if  ( x_pos != fGeneral_pickn[0] && x_pos != fGeneral_pickn[1] )
+    {
+	
+        for(int p= fUser_generalN-1; p>0; p--)
+        {
+           fGeneral_pickn[p] = fGeneral_pickn[p-1];	
+        }	
+        fGeneral_pickn[0] = x_pos;
+        currentPad->cd();
+	
+        for(int p = 0; p<fUser_generalN; p++)
+        {
+            if(p==0) { 
+                Set_Line( general_linen[p], x_pos, y_pos1, x_pos, y_pos2 );}
+            else{ 
+                Set_Line( general_linen[p], fGeneral_pickn[p], y_pos1, 
+                                            fGeneral_pickn[p], y_pos2 );}
+        	general_linen[p]->Draw();
+	   }	
+    }
+
+    c1->Update();
+}
+
+
+
 void ROOTSCOPE::SetMarker(Event_t* e){
+
+	
 
     //------------------------------------------------------------------| get x_pos, y_pos.
     TVirtualPad* currentPad = c1->GetClickSelectedPad();
@@ -689,7 +760,8 @@ void ROOTSCOPE::SetMarker(Event_t* e){
 
     Float_t x_pos = histo-> GetXaxis()-> GetBinCenter( binx );
     Float_t y_pos =  currentPad->GetUymax();
-
+    if( currentPad->GetLogy() ) 
+      { y_pos =  pow(10,currentPad->GetUymax() ); } // for log scale
 
 
 
@@ -841,7 +913,7 @@ void ROOTSCOPE::Clear_Marker(){
         }
     }
 
-
+    for( int p=0; p<NPEAKS; p++) { fGeneral_pickn[p] = 0; }  
     c1->cd( fPadActive);
     histo->Draw( fH1DrawOption.Data() );
     c1->Update();
@@ -1089,6 +1161,14 @@ void ROOTSCOPE::Initialization() {
     general_line2->SetLineColor( kGreen );
     general_line2->SetLineStyle( 2 );
 
+    fUser_generalN = 2; // by default set 2 aux lines. (ctrl+mouse click)
+    for(int p=0; p<NPEAKS; p++){
+	    general_linen[p] = new TLine();
+    	general_linen[p]->SetLineColor( kGreen ); 
+    	general_linen[p]->SetLineStyle( 2 );
+	}
+
+
     ftemp_lineN = 10;
     for( int i=0; i< ftemp_lineN; i++ ) { fTmpSet1_lines[i] = new TLine(); }
     for( int i=0; i< ftemp_lineN; i++ ) { fTmpSet2_lines[i] = new TLine(); }
@@ -1097,6 +1177,7 @@ void ROOTSCOPE::Initialization() {
     fXrange_pick2 = 0;
     fGeneral_pick1 = 0;
     fGeneral_pick2 = 0;
+    for(int p=0; p<NPEAKS; p++ ) { fGeneral_pickn[p] = 0; }
 
     for( int i=0; i<2; i++ ) {
         fH2_marker_setA[i] = new TLine(); fH2_marker_setB[i] = new TLine();
@@ -1124,6 +1205,14 @@ void ROOTSCOPE::Initialization() {
     fTF1_double_gaus_bg
     = new TF1( "double_gauss_bg", double_gauss_bg, fXrange_pick1, fXrange_pick2, 8 );
     fTF1_double_gaus_bg->SetNpx( 500 );
+
+
+    
+    fTF1_n_gaus_bg
+    = new TF1( "n_gauss_bg", n_gauss_bg, fXrange_pick1, fXrange_pick2, 3*NPEAKS+2 );
+    fTF1_n_gaus_bg->SetNpx( 500 );
+
+
 
     gStyle->SetOptStat(kFALSE);
 }
@@ -1693,6 +1782,8 @@ void ROOTSCOPE::Set_Background() {
 }
 
 
+
+
 void ROOTSCOPE::To_Draw_bg() {
 
     /* only plot the bg level line on click-selected pad. */
@@ -1728,7 +1819,7 @@ void ROOTSCOPE::To_Draw_bg() {
 
 void ROOTSCOPE::Fit_Double_Gaussian() {
 
- // organize the range
+    // organize the range
     float xMax = Get_Max_range( fXrange_pick1, fXrange_pick2 );
     float xMin = Get_Min_range( fXrange_pick1, fXrange_pick2 );
 
@@ -1743,10 +1834,18 @@ void ROOTSCOPE::Fit_Double_Gaussian() {
     {
 
         // use ctl+mouse right click to set up
-        init_c1 =  fGeneral_pick1;
-        init_c2 =  fGeneral_pick2;
-        init_h1 = histo-> GetBinContent( histo->FindBin( fGeneral_pick1 ) );
-        init_h2 = histo-> GetBinContent( histo->FindBin( fGeneral_pick2 ) );
+        // ====================================================== archieve
+        // init_c1 =  fGeneral_pick1;
+        // init_c2 =  fGeneral_pick2;
+        // init_h1 = histo-> GetBinContent( histo->FindBin( fGeneral_pick1 ) );
+        // init_h2 = histo-> GetBinContent( histo->FindBin( fGeneral_pick2 ) );
+        //======================================================================
+
+        init_c1 =  fGeneral_pickn[0];
+        init_c2 =  fGeneral_pickn[1];
+        init_h1 = histo-> GetBinContent( histo->FindBin( fGeneral_pickn[0] ) );
+        init_h2 = histo-> GetBinContent( histo->FindBin( fGeneral_pickn[1] ) );
+	
 
         Dlg_double_gaussian* get_initial_valuse
         = new Dlg_double_gaussian(  gClient->GetRoot(),
@@ -1779,7 +1878,7 @@ void ROOTSCOPE::Fit_Double_Gaussian() {
         fTF1_double_gaus_bg->SetParLimits ( 2, 0, init_h1*2);// height1
         fTF1_double_gaus_bg->SetParLimits ( 3, xMin, xMax ); // center1
         fTF1_double_gaus_bg->SetParLimits ( 4, init_sigma1*0.01, init_sigma1*3 );
-        fTF1_double_gaus_bg->SetParLimits ( 5, 0, init_h1*2); // height2
+        fTF1_double_gaus_bg->SetParLimits ( 5, 0, init_h2*2); // height2
         fTF1_double_gaus_bg->SetParLimits ( 6, xMin, xMax );  // center2
         fTF1_double_gaus_bg->SetParLimits ( 7, init_sigma2*0.01, init_sigma2*3 );
 
@@ -1831,13 +1930,15 @@ void ROOTSCOPE::Fit_Double_Gaussian() {
 
 
         float chisqr = -0.0;
-         if( fTF1_double_gaus_bg->GetNDF() != 0 ) {
+        
+        if( fTF1_double_gaus_bg->GetNDF() != 0 ) {
             chisqr = fTF1_double_gaus_bg->GetChisquare()/fTF1_double_gaus_bg->GetNDF();
         }
-	// to print the peak in the order of channel ( from small to large )
-	if( fitted_c1 < fitted_c2 ) {
 
-	    *fText_viewer
+        // to print the peak in the order of channel ( from small to large )
+        if( fitted_c1 < fitted_c2 ) {
+
+	       *fText_viewer
             <<
             Form( "\nPeak1 Center = %5.3f, cnt = %5.2f, FWHM = %5.2f, Area/cmp = %5.2f\n",
                 fitted_c1, area1/histo->GetBinWidth(1), FWHM1, area1/fCmp)
@@ -1848,11 +1949,10 @@ void ROOTSCOPE::Fit_Double_Gaussian() {
             Form( "Chisqr/N = %5.2f (cmp=%d)", chisqr, fCmp )
             <<  endl;
             fText_viewer->ShowBottom();
+        }
+        else {
 
-	}
-	else {
-
-	    *fText_viewer
+	       *fText_viewer
             <<
             Form( "\nPeak1 Center = %5.3f, cnt = %5.2f, FWHM = %5.2f, Area/cmp = %5.2f\n",
                 fitted_c2, area2/histo->GetBinWidth(1), FWHM2, area2/fCmp )
@@ -1863,12 +1963,179 @@ void ROOTSCOPE::Fit_Double_Gaussian() {
             Form( "Chisqr/N = %5.2f (cmp=%d)", chisqr, fCmp )
             <<  endl;
             fText_viewer->ShowBottom();
-	}
+	    }
+
+        // print out on the screen
+    	// cout<<"************  Peak "<<1<<" ************"<<endl;
+    	// cout<<"Centroid:  "<< fitted_c1 <<endl;
+    	// cout<<"Counts:  "<< area1/histo->GetBinWidth(1) <<endl;
+    	// cout<<"Area:  "<< area1 << endl;
+    	// cout<<"FWHM:  "<< FWHM1 << endl;
+    	// cout<<endl;
+
+    	// cout<<"************  Peak "<<2<<" ************"<<endl;
+    	// cout<<"Centroid:  "<< fitted_c2 << endl;
+    	// cout<<"Counts:  "<< area2/histo->GetBinWidth(1) << endl;
+    	// cout<<"Area:  "<< area2 << endl;
+    	// cout<<"FWHM:  "<< FWHM2 << endl;
+    	// cout<<endl;
 
 
     }
 
 }
+
+
+// tai: working on this to use dialog.
+void ROOTSCOPE::Fit_N_Gaussian() {
+
+    // organize the range
+    float xMax = Get_Max_range( fXrange_pick1, fXrange_pick2 );
+    float xMin = Get_Min_range( fXrange_pick1, fXrange_pick2 );
+
+    Bool_t isNoValues = false;
+    Float_t init_h[fUser_generalN] ;
+    Float_t init_c[fUser_generalN] ;
+    Float_t init_s[fUser_generalN] ;
+
+
+
+    // to ensure we have a proper range.
+    if( xMax != xMin )
+    {
+
+        // use ctl+mouse right click to set up
+
+        float init_s_guess = ( xMax - xMin )/ fUser_generalN;
+        init_s_guess = init_s_guess / 2.35482;
+        init_s_guess = init_s_guess * 0.5; 
+
+        for( int p=0; p<fUser_generalN; p++ ) 
+        {
+            init_h[p] = 
+              histo-> GetBinContent( histo->FindBin( fGeneral_pickn[p] ) );
+            init_c[p] = fGeneral_pickn[p];
+            init_s[p] = init_s_guess;
+        }
+
+        // let user to fine tune the fitting parameters.
+        new Dlg_N_gaussian( gClient->GetRoot(),
+                        init_h,
+                        init_c,
+                        init_s,
+                        fUser_generalN );
+       
+      
+
+        Clear_Marker();
+
+        // fitting
+        Double_t param[3*NPEAKS+2] = {0.}; 
+        param[0] = fBG_const;
+        param[1] = fBG_linear;
+        for (int p=0; p<fUser_generalN; p++) {
+            param[3*p + 2] = init_h[p];
+            param[3*p + 3] = init_c[p];
+            param[3*p + 4] = init_s[p];
+        }
+
+        fTF1_n_gaus_bg->SetParameters(param);
+        fTF1_n_gaus_bg->FixParameter( 0, fBG_const  );
+        fTF1_n_gaus_bg->FixParameter( 1, fBG_linear );
+
+
+        for (int p=0;p <fUser_generalN; p++) {
+            fTF1_n_gaus_bg->SetParLimits( 3*p+2, 0, init_h[p]*2);// height
+            fTF1_n_gaus_bg->SetParLimits( 3*p+3, xMin, xMax );   // center
+            fTF1_n_gaus_bg->SetParLimits( 3*p+4, init_s[p]*0.01, init_s[p]*3 ); 
+        }
+
+        histo->Fit( fTF1_n_gaus_bg, "MNQB", "", xMin, xMax  );
+
+
+
+        float lower_limit = histo->GetXaxis()->GetXmin();
+        float upper_limit = histo->GetXaxis()->GetXmax();
+        
+        // fitting curve
+        fTF1_n_gaus_bg->SetRange( lower_limit, upper_limit );
+        fTF1_n_gaus_bg->SetLineWidth(3);
+        fTF1_n_gaus_bg->SetLineColor(kMagenta);
+        fTF1_n_gaus_bg->Draw("same");
+
+        // individual Gaussian 
+        fTF1_gaus_bg->SetLineColor(kRed-3);
+        fTF1_gaus_bg->SetRange( lower_limit, upper_limit );
+        fTF1_gaus_bg->SetParameter ( 0, fBG_const  );
+        fTF1_gaus_bg->SetParameter ( 1, fBG_linear );
+        fTF1_gaus_bg->SetLineWidth(1);
+        fTF1_gaus_bg->SetLineStyle(2);
+
+        for (int p=0;p<fUser_generalN;p++) 
+        {
+            fTF1_gaus_bg->SetParameter( 2,  fTF1_n_gaus_bg->GetParameter(3*p+2) );// height
+            fTF1_gaus_bg->SetParameter( 3,  fTF1_n_gaus_bg->GetParameter(3*p+3) ); // center
+            fTF1_gaus_bg->SetParameter( 4,  fTF1_n_gaus_bg->GetParameter(3*p+4) ); // sigma
+            fTF1_gaus_bg->DrawCopy("same");
+        }
+
+        // backgrond 
+        // fTF1_bg_linear->SetLineColor(kGreen+3);
+        fTF1_bg_linear->SetRange( lower_limit, upper_limit );
+        fTF1_bg_linear->SetParameter ( 0, fBG_const  );
+        fTF1_bg_linear->SetParameter ( 1, fBG_linear );
+        fTF1_bg_linear->DrawCopy("same");
+        c1->Update();
+
+        // --------------------------------------------| show message
+        for (int p=0;p<fUser_generalN;p++){
+            
+            float center = fTF1_n_gaus_bg->GetParameter(3*p+3);
+            float height = fTF1_n_gaus_bg->GetParameter(3*p+2);  
+            float sigma  = fTF1_n_gaus_bg->GetParameter(3*p+4);
+
+            float area = TMath::Sqrt( 2 * TMath::Pi() ) * height * sigma;
+            float FWHM = 2.35482 * sigma; 
+
+            *fText_viewer 
+            <<
+            Form( "Peak%d Center = %5.3f, cnt = %5.2f, FWHM = %5.2f, Area/cmp = %5.2f\n",
+            p, center, area/histo->GetBinWidth(1), FWHM, area/fCmp)
+            <<  endl;
+            
+            fText_viewer->ShowBottom();
+        }
+        
+        float chisqr = -0.0;
+    
+        if( fTF1_n_gaus_bg->GetNDF() != 0 ) {
+            chisqr = fTF1_n_gaus_bg->GetChisquare()/fTF1_n_gaus_bg->GetNDF();
+        }
+        
+        *fText_viewer 
+            << Form( "Chisqr/N = %5.2f (cmp=%d)", chisqr, fCmp )
+            <<  endl;
+            
+
+    }
+
+}
+
+
+
+void ROOTSCOPE::Set_FitN( unsigned int input ) {
+
+    if( input < 2 ){ input = 2; }
+
+    if( input > 10 ){ input = 10; }
+
+    GL_peakn = input; // global variable defined in myUtility.h
+
+    fUser_generalN = input;
+}
+
+
+
 
 
 void ROOTSCOPE::Expand( ) {
@@ -3507,6 +3774,25 @@ void ROOTSCOPE::To_show_histo_operation_dlg() {
         // task has been done at Dlg_Operation_histos::to_apply_formula
 
     }
+    else if( output_message.Contains("set fitN:") ){
+
+        
+
+        TObjArray* tmp_array = output_message.Tokenize(":");
+        Int_t substringN = tmp_array->GetEntries();
+        
+        TString s_tmp = ( (TObjString*)tmp_array->At(substringN-1) )->GetString();
+        
+        if( s_tmp.IsDigit() ) {  
+
+            unsigned int fitN = s_tmp.Atoi();
+            
+            Set_FitN( fitN ); 
+            
+            *fText_viewer << Form( "set fitN = %d", fitN ) <<  endl;
+            fText_viewer->ShowBottom();
+        }
+    }
     else {
         // from 99 = 2 + 1, or 3 =2 , etc ... histogram operation.
         // open the one we just operated.
@@ -3809,7 +4095,7 @@ void ROOTSCOPE::Projection_2d( bool flagXY, bool toShow = true ){
     {
         pHisto_name  = Form("[%d] gate_X_%.1f_%.1f", histo2d_num, xMin, xMax );
         pHisto_title = Form("[%d] gate on X: %.1f to %.1f",histo2d_num, xMin, xMax );
-        pHisto = histo2d->ProjectionY( pHisto_name.Data(), binx1, binx2 );
+        pHisto = histo2d->ProjectionY( pHisto_name.Data(), binx1, binx2, "o" );
         pHisto->SetTitle( pHisto_title.Data() );
         histos.push_back( pHisto );
         *fText_viewer <<
@@ -3822,7 +4108,7 @@ void ROOTSCOPE::Projection_2d( bool flagXY, bool toShow = true ){
     {
         pHisto_name  = Form("[%d] gating_Y_%.1f_%.1f",histo2d_num, yMin, yMax );
         pHisto_title = Form("[%d] gate on Y: %.1f to %.1f",histo2d_num, yMin, yMax );
-        pHisto = histo2d->ProjectionX( pHisto_name.Data(), biny1, biny2 );
+        pHisto = histo2d->ProjectionX( pHisto_name.Data(), biny1, biny2, "o" );
         pHisto->SetTitle( pHisto_title.Data() );
         histos.push_back( pHisto );
         *fText_viewer <<
@@ -5127,9 +5413,7 @@ ROOTSCOPE::ROOTSCOPE( const TGWindow * p, const char* rootFileName  )
 
 void myROOTSCOPE() {
 
-
-
-
+    
     // prepare some histograms
     TH2F* htwoD = new TH2F("htwoD","htwoD",100,-3,3,100,-3, 3 );
 
@@ -5178,7 +5462,7 @@ void myROOTSCOPE() {
         app3->AddOneDHisto( honeD );
     }
 
-    // initially 1d/2d histogram(s) from a rootfile.
+    // initially 1d/2d histogram(s) from a rootfile. 
     if( 1 ) {
 
         ROOTSCOPE* app4

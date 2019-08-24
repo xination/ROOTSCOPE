@@ -1,7 +1,7 @@
 /*
 *   Author : Pei-Luan Tai
 *   Contact: pt10f@my.fsu.edu
-*   Last update: May 2, 2017
+*   Last update: Aug 24, 2019
 ***************************************/
 #include <vector>
 #include <TH1.h>
@@ -685,6 +685,20 @@ double double_gauss_bg(  Double_t *t, Double_t *par)
 }
 
 
+const int NPEAKS = 10; // hard limit used in N-Gaussian fitting.
+
+int GL_peakn = 3 ; // tai: this can be modified by user 
+
+double n_gauss_bg(Double_t *x, Double_t *par) {  
+   Double_t result = par[0] + par[1]*x[0];
+   for (Int_t p=0;p< GL_peakn; p++) {
+      Double_t norm  = par[3*p+2];
+      Double_t mean  = par[3*p+3];
+      Double_t sigma = par[3*p+4];
+      result += norm*TMath::Gaus(x[0],mean,sigma);
+   }
+   return result;
+}
 
 
 
