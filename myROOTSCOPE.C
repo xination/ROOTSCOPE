@@ -1210,6 +1210,7 @@ void ROOTSCOPE::Initialization() {
     
     fTF1_n_gaus_bg
     = new TF1( "n_gauss_bg", n_gauss_bg, fXrange_pick1, fXrange_pick2, 3*NPEAKS+2 );
+    //= new TF1( "n_gauss_bg", n_gauss_bg, fXrange_pick1, fXrange_pick2, 3*GL_peakn+2 );    
     fTF1_n_gaus_bg->SetNpx( 500 );
 
 
@@ -1499,29 +1500,52 @@ void ROOTSCOPE::Get_Sum( bool isTH2 ) {
         int     counts = 0;
         float dX   =histo->GetXaxis()->GetBinWidth(1);
 
-        for( Int_t i =binx1; i<binx2; i++ ){
+        //for( Int_t i =binx1; i<binx2; i++ ){
+	for( Int_t i =binx1+1; i<binx2; i++ ){ //exclude the left and right edges
              float height = histo-> GetBinContent( i );
              area += ( height * dX );
 
              float bgValue
              = fBG_const + fBG_linear * histo->GetXaxis()->GetBinCenter(i);
 
-            if( height > bgValue) { counts += height; }
+            //if( height > bgValue) { counts += height; }
+	      if( height > bgValue) { counts += (height - bgValue); } // remove the bg
         }
 
-        float y1 = fBG_const + fBG_linear * xMin;
+        /*float y1 = fBG_const + fBG_linear * xMin;
         float y2 = fBG_const + fBG_linear * xMax;
         float  w = xMax - xMin;
 
         float area_bg = 0.5 * w * ( y1 + y2 );
 
         area = area - area_bg;
+	*/
+
+ 	float y1 = fBG_const + fBG_linear * (xMin + 0.5*histo->GetBinWidth(1));
+        float y2 = fBG_const + fBG_linear * (xMax - 0.5*histo->GetBinWidth(1));
+        float  w = xMax - xMin - histo->GetBinWidth(1);
+	float area_bg = 0;
+	if(y2>=y1) area_bg = 0.5*w*(y2-y1) + y1*w;
+	else area_bg = 0.5*w*(y1-y2) + y2*w;
+
+        double area_less_bg = area - area_bg;
+
 
         *fText_viewer
         << Form("\nsum over the range %.1f to %.1f (binwidth = %.2f total bin = %d)\n" , xMin, xMax, histo->GetBinWidth(1), histo->GetNbinsX() )
         << Form("area/cmp = %.1f (bg = %.f, cmp = %d). \n",  area/fCmp, area_bg, fCmp)
         << Form("We have %d counts above bg.", counts)  <<  endl;
         fText_viewer->ShowBottom();
+
+	/*
+	//print out on the screen
+	cout<<"*****************Area and sum over selected range*****************"<<endl;
+	cout<<"Sum from "<<xMin+ 0.5*histo->GetBinWidth(1)<<" to  "<<xMax- 0.5*histo->GetBinWidth(1)<<"  (binwidth = "<<histo->GetBinWidth(1)<<"  , total bins = "<<histo->GetNbinsX()<<")"<<endl;
+	cout<<"Total area: "<<area<<"     bg area: "<<area_bg<<endl;
+	cout<<"Subtracted area: "<<area_less_bg<<endl;
+	cout<<"Counts:  "<<counts<<endl;
+	cout<<endl;
+	*/
     }
 
 
@@ -2043,14 +2067,20 @@ void ROOTSCOPE::Fit_N_Gaussian() {
         fTF1_n_gaus_bg->FixParameter( 0, fBG_const  );
         fTF1_n_gaus_bg->FixParameter( 1, fBG_linear );
 
-
+	
         for (int p=0;p <fUser_generalN; p++) {
             fTF1_n_gaus_bg->SetParLimits( 3*p+2, 0, init_h[p]*2);// height
             fTF1_n_gaus_bg->SetParLimits( 3*p+3, xMin, xMax );   // center
             fTF1_n_gaus_bg->SetParLimits( 3*p+4, init_s[p]*0.01, init_s[p]*3 ); 
         }
+	
+
+	for (int p=(3*fUser_generalN+2);p <(3*NPEAKS+2); p++) fTF1_n_gaus_bg->FixParameter( p, 0.0 ); //fix to 0 the rest of parameters
+        
+
 
         histo->Fit( fTF1_n_gaus_bg, "MNQB", "", xMin, xMax  );
+	//histo->Fit( fTF1_n_gaus_bg, "MNB", "", xMin, xMax  );
 
 
 
@@ -2079,7 +2109,7 @@ void ROOTSCOPE::Fit_N_Gaussian() {
             fTF1_gaus_bg->DrawCopy("same");
         }
 
-        // backgrond 
+        // background 
         // fTF1_bg_linear->SetLineColor(kGreen+3);
         fTF1_bg_linear->SetRange( lower_limit, upper_limit );
         fTF1_bg_linear->SetParameter ( 0, fBG_const  );
@@ -2115,7 +2145,20 @@ void ROOTSCOPE::Fit_N_Gaussian() {
         *fText_viewer 
             << Form( "Chisqr/N = %5.2f (cmp=%d)", chisqr, fCmp )
             <<  endl;
-            
+      
+
+	// print out on the screen
+       /*for (int p=0;p<fUser_generalN;p++) {
+		float area = TMath::Sqrt( 2 * TMath::Pi() ) * fTF1_n_gaus_bg->GetParameter(3*p+2) * fTF1_n_gaus_bg->GetParameter(3*p+4);
+		cout<<"************  Peak "<<p+1<<" ************"<<endl;
+		cout<<"Centroid:  "<<fTF1_n_gaus_bg->GetParameter(3*p+3)<<endl;
+		cout<<"Counts:  "<<area/histo->GetBinWidth(1)<<endl;
+		cout<<"Area:  "<<area<<endl;
+		cout<<"FWHM:  "<<fTF1_n_gaus_bg->GetParameter(3*p+4)*2.35482<<endl;
+		cout<<endl;
+   		}
+		*/
+      
 
     }
 
