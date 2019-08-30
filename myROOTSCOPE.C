@@ -4,7 +4,8 @@
 //   
 //   contributions list:
 //   ========================== 
-//   Juan Zamora: N Gaussian fit functionalities.
+//   Juan Zamora: N Gaussian fit() functionalities.
+//                improve Get_Sum().
 //***************************************/
 #include "myDialog.h"
 #include "myDialog_2D.h"
@@ -247,7 +248,12 @@ private:
 
     void Fit_Background_pol1();  // for bg = const + linear * x
 
-    void Set_Background();
+    void Set_Linear_Background(); // similar to previous one
+                                  // estimate the bg by the edges of a peak.
+
+    void Set_Background(); // manual input.
+
+    void Reset_Background(); // set const = linear = 0.
 
     void Get_Sum( bool isTH2  ); // for both 1d and 2d
 
@@ -499,9 +505,9 @@ void ROOTSCOPE::To_response(Event_t* e) {
 
             else if( key_symbol == kKey_g )  { Fit_Gaussian( ); }
 
-            else if( key_symbol == kKey_G )  { Fit_Double_Gaussian( ); }
+            // else if( key_symbol == kKey_G )  { Fit_Double_Gaussian( ); } // only for 2 Gauss
 
-	        else if( key_symbol == kKey_T )  { Fit_N_Gaussian( ); }   //todo: will be integrated in kKey_G
+            else if( key_symbol == kKey_G )  { Fit_N_Gaussian( ); }  // for 2, 3, .. 10 Gauss.
 
             else if( key_symbol == kKey_s )  { Get_Sum( 0 ); }
 
@@ -519,9 +525,9 @@ void ROOTSCOPE::To_response(Event_t* e) {
 
             else if( key_symbol == kKey_F3  ) { To_set_logscale(); }
 
-	        // else if( key_symbol == kKey_0 )  { Reset_Functions( ); }  // newly add
+            else if( key_symbol == kKey_0 )  { Reset_Background(); }
 
-	        // else if( key_symbol == kKey_l )  { Set_Linear_Background(); } // newly add
+	        else if( key_symbol == kKey_l )  { Set_Linear_Background(); } //todo: write note in manual.
 
         }
 
@@ -918,6 +924,7 @@ void ROOTSCOPE::Clear_Marker(){
     histo->Draw( fH1DrawOption.Data() );
     c1->Update();
 
+    
 }
 
 
@@ -1210,7 +1217,6 @@ void ROOTSCOPE::Initialization() {
     
     fTF1_n_gaus_bg
     = new TF1( "n_gauss_bg", n_gauss_bg, fXrange_pick1, fXrange_pick2, 3*NPEAKS+2 );
-    //= new TF1( "n_gauss_bg", n_gauss_bg, fXrange_pick1, fXrange_pick2, 3*GL_peakn+2 );    
     fTF1_n_gaus_bg->SetNpx( 500 );
 
 
@@ -1281,13 +1287,15 @@ void ROOTSCOPE::Create_Widgets( UInt_t w, UInt_t h  ) {
 
         fMenu_Entries[1]->AddEntry( Form("%-20s\t%6s", "fit single Gaussian","g"), 110 );
 
-        fMenu_Entries[1]->AddEntry( Form("%-20s\t%6s", "fit double Gaussian","G"), 111 );
+        fMenu_Entries[1]->AddEntry( Form("%-20s\t%6s", "fit double/N Gaussian","G"), 111 );
 
         fMenu_Entries[1]->AddEntry( Form("%-20s\t%6s", "fit const bg","b"), 112 );
 
         fMenu_Entries[1]->AddEntry( Form("%-20s\t%6s", "fit linear bg","1"), 113 );
 
         fMenu_Entries[1]->AddEntry( Form("%-20s\t%6s", "set const bg","alt+b"),114);
+
+        fMenu_Entries[1]->AddEntry( Form("%-20s\t%6s", "reset bg","0"),123);
 
         fMenu_Entries[1]->AddEntry( Form("%-20s\t%6s", "get sum","s"), 115 );
 
@@ -1500,52 +1508,37 @@ void ROOTSCOPE::Get_Sum( bool isTH2 ) {
         int     counts = 0;
         float dX   =histo->GetXaxis()->GetBinWidth(1);
 
-        //for( Int_t i =binx1; i<binx2; i++ ){
-	for( Int_t i =binx1+1; i<binx2; i++ ){ //exclude the left and right edges
-             float height = histo-> GetBinContent( i );
-             area += ( height * dX );
+        //exclude the left and right edges
+        for( Int_t i =binx1+1; i<binx2; i++ ){ 
+            
+            float height = histo-> GetBinContent( i );
+            area += ( height * dX );
 
              float bgValue
              = fBG_const + fBG_linear * histo->GetXaxis()->GetBinCenter(i);
 
-            //if( height > bgValue) { counts += height; }
-	      if( height > bgValue) { counts += (height - bgValue); } // remove the bg
+            // remove the bg
+            if( height > bgValue) { counts += (height - bgValue); } 
         }
 
-        /*float y1 = fBG_const + fBG_linear * xMin;
-        float y2 = fBG_const + fBG_linear * xMax;
-        float  w = xMax - xMin;
-
-        float area_bg = 0.5 * w * ( y1 + y2 );
-
-        area = area - area_bg;
-	*/
-
- 	float y1 = fBG_const + fBG_linear * (xMin + 0.5*histo->GetBinWidth(1));
+ 
+        float y1 = fBG_const + fBG_linear * (xMin + 0.5*histo->GetBinWidth(1));
         float y2 = fBG_const + fBG_linear * (xMax - 0.5*histo->GetBinWidth(1));
-        float  w = xMax - xMin - histo->GetBinWidth(1);
-	float area_bg = 0;
-	if(y2>=y1) area_bg = 0.5*w*(y2-y1) + y1*w;
-	else area_bg = 0.5*w*(y1-y2) + y2*w;
+        float  w = xMax - xMin - histo->GetBinWidth(1); // width
+        float area_bg = 0;
+        if(y2>=y1) { area_bg = 0.5*w*(y2-y1) + y1*w; }
+        else{        area_bg = 0.5*w*(y1-y2) + y2*w; }
 
         double area_less_bg = area - area_bg;
 
 
         *fText_viewer
         << Form("\nsum over the range %.1f to %.1f (binwidth = %.2f total bin = %d)\n" , xMin, xMax, histo->GetBinWidth(1), histo->GetNbinsX() )
-        << Form("area/cmp = %.1f (bg = %.f, cmp = %d). \n",  area/fCmp, area_bg, fCmp)
+        << Form("area/cmp = %.1f (bg = %.f, cmp = %d). \n",  area_less_bg/fCmp, area_bg, fCmp)
         << Form("We have %d counts above bg.", counts)  <<  endl;
         fText_viewer->ShowBottom();
 
-	/*
-	//print out on the screen
-	cout<<"*****************Area and sum over selected range*****************"<<endl;
-	cout<<"Sum from "<<xMin+ 0.5*histo->GetBinWidth(1)<<" to  "<<xMax- 0.5*histo->GetBinWidth(1)<<"  (binwidth = "<<histo->GetBinWidth(1)<<"  , total bins = "<<histo->GetNbinsX()<<")"<<endl;
-	cout<<"Total area: "<<area<<"     bg area: "<<area_bg<<endl;
-	cout<<"Subtracted area: "<<area_less_bg<<endl;
-	cout<<"Counts:  "<<counts<<endl;
-	cout<<endl;
-	*/
+	
     }
 
 
@@ -1769,7 +1762,37 @@ void ROOTSCOPE::Fit_Background_pol1() {
     }
 }
 
+// this is not from fitting but use human eyeys to estimate 
+// ( suggested by users )
+void ROOTSCOPE::Set_Linear_Background( ) {
 
+    // reset
+    fBG_linear = 0; 
+    fBG_const  = 0;
+
+    // organize the range
+    float xMax = Get_Max_range( fXrange_pick1, fXrange_pick2 );
+    float xMin = Get_Min_range( fXrange_pick1, fXrange_pick2 );
+    float yMax  = histo-> GetBinContent( histo->FindBin( xMax ) );
+    float yMin  = histo-> GetBinContent( histo->FindBin( xMin ) );
+
+    // to ensure we have a proper range.
+    if( xMax != xMin )
+    {
+        fBG_linear = (yMax - yMin)/(xMax - xMin) ;
+        fBG_const  = -1*fBG_linear*xMin + yMin;
+        fTF1_bg_linear->SetParameter(0, fBG_const);
+        fTF1_bg_linear->SetParameter(1, fBG_linear);
+        To_Draw_bg();
+    }
+
+    *fText_viewer <<
+    Form( "\nEstimate linear bg via x1= %6.2f and x2= %6.2f \n", 
+        xMin, xMax ) <<  endl;
+    fText_viewer->ShowBottom();
+}
+
+ 
 
 void ROOTSCOPE::Fit_Background() {
 
@@ -1806,7 +1829,15 @@ void ROOTSCOPE::Set_Background() {
 }
 
 
+void ROOTSCOPE::Reset_Background() {
 
+    Clear_Marker();
+    fBG_const = 0.;
+    fBG_linear = 0.;
+
+    *fText_viewer << Form( "\nreset bg const = 0 and linear = 0" ) <<  endl;
+    fText_viewer->ShowBottom();
+}
 
 void ROOTSCOPE::To_Draw_bg() {
 
@@ -2074,13 +2105,14 @@ void ROOTSCOPE::Fit_N_Gaussian() {
             fTF1_n_gaus_bg->SetParLimits( 3*p+4, init_s[p]*0.01, init_s[p]*3 ); 
         }
 	
-
-	for (int p=(3*fUser_generalN+2);p <(3*NPEAKS+2); p++) fTF1_n_gaus_bg->FixParameter( p, 0.0 ); //fix to 0 the rest of parameters
+        //fix to 0 the rest of parameters
+        for( int p=(3*fUser_generalN+2);p <(3*NPEAKS+2); p++) 
+        { fTF1_n_gaus_bg->FixParameter( p, 0.0 ); }
         
 
 
         histo->Fit( fTF1_n_gaus_bg, "MNQB", "", xMin, xMax  );
-	//histo->Fit( fTF1_n_gaus_bg, "MNB", "", xMin, xMax  );
+	
 
 
 
@@ -2147,17 +2179,17 @@ void ROOTSCOPE::Fit_N_Gaussian() {
             <<  endl;
       
 
-	// print out on the screen
-       /*for (int p=0;p<fUser_generalN;p++) {
-		float area = TMath::Sqrt( 2 * TMath::Pi() ) * fTF1_n_gaus_bg->GetParameter(3*p+2) * fTF1_n_gaus_bg->GetParameter(3*p+4);
-		cout<<"************  Peak "<<p+1<<" ************"<<endl;
-		cout<<"Centroid:  "<<fTF1_n_gaus_bg->GetParameter(3*p+3)<<endl;
-		cout<<"Counts:  "<<area/histo->GetBinWidth(1)<<endl;
-		cout<<"Area:  "<<area<<endl;
-		cout<<"FWHM:  "<<fTF1_n_gaus_bg->GetParameter(3*p+4)*2.35482<<endl;
-		cout<<endl;
-   		}
-		*/
+        // print out on the screen
+        /*for (int p=0;p<fUser_generalN;p++) {
+        float area = TMath::Sqrt( 2 * TMath::Pi() ) * fTF1_n_gaus_bg->GetParameter(3*p+2) * fTF1_n_gaus_bg->GetParameter(3*p+4);
+        cout<<"************  Peak "<<p+1<<" ************"<<endl;
+        cout<<"Centroid:  "<<fTF1_n_gaus_bg->GetParameter(3*p+3)<<endl;
+        cout<<"Counts:  "<<area/histo->GetBinWidth(1)<<endl;
+        cout<<"Area:  "<<area<<endl;
+        cout<<"FWHM:  "<<fTF1_n_gaus_bg->GetParameter(3*p+4)*2.35482<<endl;
+        cout<<endl;
+        	}
+        */
       
 
     }
@@ -5067,10 +5099,12 @@ void ROOTSCOPE::To_response_menu( Int_t menu_id ){
         case 108: To_Change_histo_x_range(); break;
         case 109: To_overlap_histos(); break;
         case 110: Fit_Gaussian(); break;
-        case 111: Fit_Double_Gaussian(); break;
+        // case 111: Fit_Double_Gaussian(); break;
+        case 111: Fit_N_Gaussian(); break;
         case 112: Fit_Background(); break;
         case 113: Fit_Background_pol1(); break;
         case 114: Set_Background(); break;
+        case 123: Reset_Background(); break;
         case 115: Get_Sum(0); break;
         case 116: Clear_Marker(); break;
         case 117: To_find_peaks(); break;
